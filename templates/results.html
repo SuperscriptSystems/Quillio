@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Results</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+background: #2A3F4A;
+color: #F0F0F0;
+font-family: 'Roboto', sans-serif;
+padding: 40px 20px;
+}
+
+    .container {
+        max-width: 700px;
+        margin: auto;
+        background: #344955;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    h1 {
+        color: #F0F0F0;
+        border-bottom: 2px solid #4a5e6a;
+        padding-bottom: 10px;
+    }
+
+    .score {
+        font-size: 28px;
+        font-weight: bold;
+        color: #5cb85c;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    p {
+        margin: 25px 0;
+        line-height: 1.7;
+        color: #E0E0E0;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #4a5e6a;
+    }
+
+    p:last-of-type {
+        border-bottom: none;
+    }
+
+    strong {
+        color: #F0F0F0;
+    }
+
+    a {
+        display: inline-block;
+        margin-top: 20px;
+        margin-right: 10px;
+        text-decoration: none;
+        background: #5cb85c;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+
+    a:hover {
+        background: #4a9a4a;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>💡 Test Results</h1>
+        <div class="score">Final Score: {{ final_score if final_score is not none else 'N/A' }}%</div>
+        {% for item in answers %}
+            <p><strong>Q:</strong> {{ item.question }}<br>
+               <strong>📝 Your Answer:</strong> {{ item.answer }}<br>
+               <strong>✅ Assessment:</strong> {{ item.assessment }}</p>
+        {% endfor %}
+        <a href="/">🔁 Retake Test</a>
+        <a href="/course">📘 Go to Your Personalized Course</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Question {{ current }}/{{ total }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+font-family: 'Roboto', sans-serif;
+background: #2A3F4A;
+color: #F0F0F0;
+margin: 0;
+padding: 40px 20px;
+display: flex;
+align-items: center;
+justify-content: center;
+min-height: 100vh;
+}
+    .container {
+        background: #344955;
+        border-radius: 12px;
+        padding: 40px;
+        width: 100%;
+        max-width: 600px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    h1 {
+        text-align: center;
+        font-weight: 700;
+        color: #F0F0F0;
+        margin-top: 0;
+        margin-bottom: 30px;
+    }
+
+    h3 {
+        color: #F0F0F0;
+        margin-bottom: 25px;
+        font-weight: normal;
+        font-size: 1.2em;
+        display: flex;
+        align-items: center;
+    }
+
+    .q-icon {
+        color: #5cb85c;
+        font-size: 1.5em;
+        margin-right: 15px;
+        font-weight: bold;
+    }
+
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        height: 120px;
+        padding: 12px;
+        border: 1px solid #4a5e6a;
+        border-radius: 8px;
+        background: #2A3F4A;
+        color: #F0F0F0;
+        font-size: 15px;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    textarea:focus {
+        outline: none;
+        border-color: #5cb85c;
+    }
+
+    /* Custom Radio Button Styles */
+    form label {
+        display: block;
+        background-color: transparent;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+        font-size: 16px;
+    }
+
+    form label:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    input[type="radio"] {
+        display: none; /* Hide the original radio button */
+    }
+
+    input[type="radio"] + span {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    input[type="radio"] + span::before {
+        content: '';
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        margin-right: 15px;
+        border-radius: 50%;
+        background-color: #F0F0F0;
+        transition: all 0.2s ease;
+    }
+
+    input[type="radio"]:checked + span::before {
+        background-color: transparent;
+        border: 2px solid #5cb85c;
+        width: 14px; /* Adjust size to account for border */
+        height: 14px;
+    }
+
+
+    button {
+        margin-top: 25px;
+        width: 100%;
+        padding: 14px;
+        background: #5cb85c;
+        border: none;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background: #4a9a4a;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>Question {{ current }} of {{ total }}</h1>
+        <form method="post" action="{{ form_action }}">
+            <h3><span class="q-icon">*</span>{{ test_page.question }}</h3>
+            <input type="hidden" name="question" value="{{ test_page.question }}">
+            {{ input_html|safe }}
+            <button type="submit">Next ➡️</button>
+        </form>
+    </div>
+
+
+</body>
+</html>
