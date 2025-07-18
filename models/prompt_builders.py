@@ -126,7 +126,7 @@ class LessonPromptBuilder:
             - All images must follow this format exactly:
               [IMAGE_PROMPT: "A grayscale, schematic-style diagram with no text, showing ..."]
 
-            Example:
+            Example: 
             [IMAGE_PROMPT: "A grayscale, schematic-style diagram with no text, showing the layers of a neural network"]
 
             IMPORTANT: Do NOT include any text in the images themselves, as the AI image generator struggles with rendering text in images. I want the images to be a grayscale, schematic diagram.
