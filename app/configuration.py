@@ -18,22 +18,9 @@ Session(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-
-''' The following imports are there to run the code in models.py and routes.py.
-     - models.py defines database models and the user loader for Flask-Login.
-     - routes.py registers all the @app.route endpoints with the Flask app.'''
 from app import models
 from app import routes
 
 @app.context_processor
 def inject_utility_functions():
-    ''' Makes the Python 'math' module available inside Jinja2 templates.
-             Example:
-                 Python:
-                    return render_template("hello.html", username="John Doe")
-                 Html:
-                    <h1>Hello, {{ username }}!</h1>
-                 Output:
-                    <h1>Hello, John Doe!</h1>
-         '''
     return dict(math=math)

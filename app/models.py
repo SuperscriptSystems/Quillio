@@ -1,11 +1,10 @@
-from app.configuration import db, login_manager # MODIFIED: Import from the new configuration.py
+from app.configuration import db, login_manager  # Import your db and login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSONB
 
-# --- Database Models ---
 class User(UserMixin, db.Model):
-    table_name = 'users'
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -19,7 +18,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 class Course(db.Model):
-    table_name = 'courses'
+    __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     course_title = db.Column(db.String(200), nullable=False)
@@ -29,7 +28,7 @@ class Course(db.Model):
     user = db.relationship('User', backref=db.backref('courses', lazy=True, cascade="all, delete-orphan"))
 
 class Lesson(db.Model):
-    table_name = 'lessons'
+    __tablename__ = 'lessons'
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     unit_title = db.Column(db.String, nullable=False)
@@ -38,7 +37,6 @@ class Lesson(db.Model):
     is_completed = db.Column(db.Boolean, default=False, nullable=False)
     course = db.relationship('Course', backref=db.backref('lessons', lazy=True, cascade="all, delete-orphan"))
 
-# --- User Loader for Flask-Login ---
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
