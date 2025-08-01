@@ -1,207 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ARCANE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+{% extends "base.html" %}
+
+{% block title %}{% if current_user.language == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}{% endblock %}
+
+{% block content %}
+{% set lang = current_user.language %}
 <style>
-  body {
-    font-family: 'Roboto', sans-serif;
-    background: #2A3F4A;
-    color: #F0F0F0;
-    margin: 0;
-    padding: 40px 20px;
-  }
-
-  h1, h2 {
-    text-align: center;
-    font-weight: 700;
-    color: #F0F0F0;
-  }
-
-  .container {
-    background: #344955;
-    border-radius: 12px;
-    padding: 30px;
-    max-width: 600px;
-    margin: auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    animation: fadeIn 1s ease-in-out;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-  }
-
-  textarea, input[type="range"], input[type="radio"] {
-    margin-top: 8px;
-    margin-bottom: 20px;
-  }
-
-  textarea {
-    width: 100%;
-    height: 90px;
-    padding: 12px;
-    font-size: 15px;
-    border: 1px solid #4a5e6a;
-    border-radius: 8px;
-    background: #2A3F4A;
-    color: #F0F0F0;
-    font-family: 'Roboto', sans-serif;
-  }
-
-  textarea:focus {
-    outline: none;
-    border-color: #5cb85c;
-  }
-
-  .radio-group label {
-    display: inline-block;
-    font-weight: normal;
-    margin-right: 15px;
-  }
-
-  input[type="radio"] {
-    transform: scale(1.1);
-    accent-color: #5cb85c;
-    margin-right: 10px;
-  }
-
-  .slider-container {
-    margin: 20px 0;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    accent-color: #5cb85c;
-  }
-
-  .slider-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #cccccc;
-  }
-
-  .current-value {
-    text-align: center;
-    font-size: 14px;
-    margin-top: 5px;
-    color: #E0E0E0;
-    font-weight: bold;
-  }
-
-  button {
-    width: 100%;
-    padding: 14px;
-    background: #5cb85c;
-    border: none;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-
-  button:hover {
-    background: #4a9a4a;
-  }
-
-  #loading {
-    display: none;
-    text-align: center;
-    padding: 30px;
-    font-size: 22px;
-    color: #F0F0F0;
-  }
-
-  #spinner {
-    margin: 25px auto;
-    width: 50px;
-    height: 50px;
-    border: 6px solid rgba(255, 255, 255, 0.2);
-    border-top: 6px solid #5cb85c;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @media screen and (max-width: 600px) {
-    .container {
-      padding: 20px;
-    }
-    button {
-      font-size: 15px;
-    }
-  }
+  .container { background: #344955; border-radius: 12px; padding: 30px; max-width: 600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: fadeIn 1s ease-in-out; }
+  h1, h2 { text-align: center; font-weight: 700; color: #F0F0F0; }
+  h1 { font-size: 2.5rem; }
+  h2 { font-weight: 400; color: #E0E0E0; margin-bottom: 30px;}
+  label { display: block; margin-bottom: 8px; font-weight: bold; }
+  textarea { width: 100%; height: 90px; padding: 12px; font-size: 15px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  textarea:focus { outline: none; border-color: #5cb85c; }
+  .radio-group { margin-top: 20px; margin-bottom: 20px;}
+  .radio-group label { display: inline-block; font-weight: normal; margin-right: 15px; }
+  input[type="radio"] { transform: scale(1.1); accent-color: #5cb85c; margin-right: 10px; }
+  .slider-container { margin: 20px 0; }
+  input[type="range"] { width: 100%; accent-color: #5cb85c; }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: #cccccc; }
+  .current-value { text-align: center; font-size: 14px; margin-top: 5px; color: #E0E0E0; font-weight: bold; }
+  button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
+  button:hover { background: #4a9a4a; }
+  #loading { display: none; text-align: center; padding: 30px; font-size: 22px; color: #F0F0F0; }
+  #spinner { margin: 25px auto; width: 50px; height: 50px; border: 6px solid rgba(255, 255, 255, 0.2); border-top: 6px solid #5cb85c; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
-</head>
-<body>
-  <div id="main-content">
-    <h1>🧠 Arcane Knowledge Test</h1><br>
+<div id="main-content">
     <div class="container">
-      <h2>Assess Your Topic Expertise</h2><br>
+      <h1>{% if lang == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}</h1>
       <form method="POST" action="{{ url_for('assessment') }}" id="assessment-form">
-        <label for="topic">📚 Topic Description</label>
-        <textarea id="topic" name="topic" placeholder="E.g. Python decorators, World War II history..."></textarea>
+        <label for="topic">{% if lang == 'russian' %}О чем бы вы хотели узнать?{% else %}What would you like to learn about?{% endif %}</label>
+        <textarea id="topic" name="topic" placeholder="{% if lang == 'russian' %}Например, декораторы Python, история Второй мировой войны...{% else %}E.g. Python decorators, World War II history...{% endif %}" required></textarea>
 
-        <div class="radio-group">
-          <label><input type="radio" name="format" value="multiple_choice" checked> Multiple Choice</label>
-          <label><input type="radio" name="format" value="free_form"> Free-form Assignment</label>
-        </div>
+<!--        <div class="radio-group">-->
+<!--          <label>Assessment Format:</label><br>-->
+<!--          <label><input type="radio" name="format" value="multiple_choice" checked> Multiple Choice</label>-->
+<!--          <label><input type="radio" name="format" value="free_form"> Free-form Assignment</label>-->
+<!--        </div>-->
 
         <div class="slider-container">
-          <label for="knowledge">📊 Rate Your Knowledge (0-100)</label>
+          <label for="knowledge">{% if lang == 'russian' %}Насколько хорошо вы уже знаете эту тему? (0-100){% else %}How well do you know this topic already? (0-100){% endif %}</label>
           <input id="knowledge" name="knowledge" type="range" min="0" max="100" value="50">
           <div class="slider-labels">
-            <span>Beginner</span>
-            <span>Intermediate</span>
-            <span>Expert</span>
+            <span>{% if lang == 'russian' %}Новичок{% else %}Beginner{% endif %}</span>
+            <span>{% if lang == 'russian' %}Средний{% else %}Intermediate{% endif %}</span>
+            <span>{% if lang == 'russian' %}Эксперт{% else %}Expert{% endif %}</span>
           </div>
-          <div class="current-value" id="slider-value">Current: 50</div>
+          <div class="current-value" id="slider-value">{% if lang == 'russian' %}Текущее: 50{% else %}Current: 50{% endif %}</div>
+                  <h3>{% if lang == 'russian' %}Давайте выясним, что вы знаете по этой теме{% else %}Let's find out what you know on this topic{% endif %}</h3>
         </div>
-
-        <button type="submit">🚀 Generate Test</button>
+        <button type="submit">{% if lang == 'russian' %}Начать оценку{% else %}Start Assessment{% endif %}</button>
       </form>
     </div>
-  </div>
+</div>
 
-  <div id="loading">
-    <p>🧪 Preparing your custom test...</p>
+<div id="loading">
+    <p>{% if lang == 'russian' %}🧪 Готовим вашу персональную оценку...{% else %}🧪 Preparing your custom assessment...{% endif %}</p>
     <div id="spinner"></div>
-  </div>
+</div>
 
-  <script>
+<script>
     const form = document.getElementById('assessment-form');
     const loading = document.getElementById('loading');
     const mainContent = document.getElementById('main-content');
     const slider = document.getElementById("knowledge");
     const valueDisplay = document.getElementById("slider-value");
+    const lang = '{{ lang }}';
 
     form.addEventListener('submit', function () {
       mainContent.style.display = 'none';
       loading.style.display = 'block';
     });
-
     slider.addEventListener("input", function () {
-        valueDisplay.textContent = `Current: ${slider.value}`;
-
+        const prefix = lang === 'russian' ? 'Текущее: ' : 'Current: ';
+        valueDisplay.textContent = prefix + slider.value;
     });
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}

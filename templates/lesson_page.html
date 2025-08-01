@@ -22,7 +22,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        h1 {
+        /* Styling for headings generated from markdown content */
+        .content h1 {
             color: #F0F0F0;
             border-bottom: 2px solid #4a5e6a;
             padding-bottom: 10px;
@@ -78,11 +79,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>{{ title }}</h1>
-            <div class="content">
-                {{ content|safe }}
-            </div>
-        <a href="{{ url_for('show_course') }}" class="back-button">Back to Course</a>
+        <!-- The 'content' variable contains the AI-generated lesson, which includes its own title -->
+        <div class="content">
+            {{ content|safe }}
+        </div>
+
+        <!-- The 'course_id' is passed to create the correct link back -->
+        <a href="{{ url_for('show_course', course_id=course_id) }}" class="back-button">{% if current_user.language == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
     </div>
 </body>
 </html>

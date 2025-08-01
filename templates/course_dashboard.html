@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}{% endblock %}
+
+{% block content %}
+{% set lang = current_user.language %}
+<style>
+    .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; margin-bottom: 20px;}
+    .header h1 { margin: 0; color: #F0F0F0; border: none; padding: 0;}
+    .new-course-btn { background: #5cb85c; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+    .new-course-btn:hover { background: #4a9a4a; }
+    .course-list { list-style-type: none; padding-left: 0; }
+    .course-item { background: #2A3F4A; margin-bottom: 15px; border-radius: 8px; overflow: hidden; }
+    .course-info { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .course-info a { text-decoration: none; color: #F0F0F0; font-weight: bold; font-size: 1.2em; }
+    .course-info a:hover { color: #5cb85c; }
+    .archive-form button { background: none; border: 1px solid #d9534f; color: #d9534f; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    .archive-form button:hover { background: #d9534f; color: white; }
+    .progress-bar-container { background-color: #4a5e6a; height: 10px; }
+    .progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+    .no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
+</style>
+
+<div class="container">
+    <div class="header">
+        <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
+        <a href="{{ url_for('home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
+    </div>
+
+    {% if courses %}
+        <ul class="course-list">
+            {% for course in courses %}
+                <!-- THIS IS THE CORRECTED LINE -->
+                {% set total_lessons = course.course_data.units | map(attribute='lessons') | sum(start=[]) | length %}
+                {% set progress_percent = (course.completed_lessons / total_lessons * 100) if total_lessons > 0 else 0 %}
+                <li class="course-item">
+                    <div class="course-info">
+                        <a href="{{ url_for('show_course', course_id=course.id) }}">{{ course.course_title }}</a>
+                        <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
+                            <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
+                        </form>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {{ progress_percent }}%;"></div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="no-courses">
+            <p>{% if lang == 'russian' %}У вас нет активных курсов.{% else %}You don't have any active courses.{% endif %}</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

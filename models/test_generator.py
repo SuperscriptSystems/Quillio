@@ -7,13 +7,13 @@ class TestGenerator:
     def __init__(self, ask_ai_function):
         self.ask_ai = ask_ai_function
 
-    def generate_multiple_choice_test(self, topic, additional_prompt=""):
-        prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_prompt)
+    def generate_multiple_choice_test(self, topic, additional_prompt="", language="english"):
+        prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_prompt, language)
         response = self._get_ai_test_data(prompt)
         return self._create_test_from_data(response, topic, is_open=False)
 
-    def generate_open_test(self, topic, additional_prompt=""):
-        prompt = TestPromptBuilder.build_open_question_prompt(topic, additional_prompt)
+    def generate_open_test(self, topic, additional_prompt="", language="english"):
+        prompt = TestPromptBuilder.build_open_question_prompt(topic, additional_prompt, language)
         response = self._get_ai_test_data(prompt)
         return self._create_test_from_data(response, topic, is_open=True)
 

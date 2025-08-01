@@ -1,7 +1,8 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>Question {{ current }}/{{ total }}</title>
+<title>{% if lang == 'russian' %}Вопрос {{ current }}/{{ total }}{% else %}Question {{ current }}/{{ total }}{% endif %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <style>
 body {
@@ -99,15 +100,15 @@ min-height: 100vh;
         height: 18px;
         margin-right: 15px;
         border-radius: 50%;
-        background-color: #F0F0F0;
+        background-color: #2A3F4A;
+        border: 2px solid #4a5e6a;
         transition: all 0.2s ease;
+        box-sizing: border-box;
     }
 
     input[type="radio"]:checked + span::before {
-        background-color: transparent;
-        border: 2px solid #5cb85c;
-        width: 14px; /* Adjust size to account for border */
-        height: 14px;
+        background-color: #F0F0F0;
+        border-color: #F0F0F0;
     }
 
 
@@ -137,15 +138,18 @@ min-height: 100vh;
 </head>
 <body>
     <div class="container">
-        <h1>Question {{ current }} of {{ total }}</h1>
+        <h1>{% if lang == 'russian' %}Вопрос {{ current }} из {{ total }}{% else %}Question {{ current }} of {{ total }}{% endif %}</h1>
         <form method="post" action="{{ form_action }}">
             <h3><span class="q-icon">*</span>{{ test_page.question }}</h3>
             <input type="hidden" name="question" value="{{ test_page.question }}">
             {{ input_html|safe }}
-            <button type="submit">Next ➡️</button>
+
+            {% if current < total %}
+                <button type="submit">{% if lang == 'russian' %}Далее ➡️{% else %}Next ➡️{% endif %}</button>
+            {% else %}
+                <button type="submit">{% if lang == 'russian' %}Завершить{% else %}Finish{% endif %}</button>
+            {% endif %}
         </form>
     </div>
-
-
 </body>
 </html>

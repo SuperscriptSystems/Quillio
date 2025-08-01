@@ -1,11 +1,17 @@
 class TestPromptBuilder:
     @staticmethod
-    def build_multiple_choice_prompt(topic, additional_prompt=""):
+    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5):
         return f"""
             You are assessing a person's skill level in this topic: {topic}.
-            {additional_prompt}
+            {additional_context}
 
-            Create 10-15 multiple choice questions in this format (valid JSON only):
+            Create {number_of_questions} multiple choice questions.
+            Your entire response MUST be a valid JSON object.
+            Generate the response in the following language: {language}.
+            All user-visible string values (like test-name, topic, question, and option text) must be in {language}.
+            Keep all JSON keys (like "test-name", "topic", "questions", "type", "options", "option1", etc.) in English.
+
+            Use this format:
 
             {{
               "test-name": "Sample Test Name",
@@ -26,10 +32,15 @@ class TestPromptBuilder:
         """
 
     @staticmethod
-    def build_open_question_prompt(topic, additional_prompt=""):
+    def build_open_question_prompt(topic, additional_prompt="", language="english"):
         return f"""
             Create 10-15 open-ended questions to assess someone's knowledge on "{topic}".
             {additional_prompt}
+
+            Your entire response MUST be a valid JSON object.
+            Generate the response in the following language: {language}.
+            All user-visible string values (like test-name, topic, and question text) must be in {language}.
+            Keep all JSON keys (like "test-name", "topic", "questions", "type") in English.
 
             Respond in this JSON format:
 
@@ -48,25 +59,25 @@ class TestPromptBuilder:
 
 class AnswerPromptBuilder:
     @staticmethod
-    def build_check_prompt(question, answer, options, isopen):
+    def build_check_prompt(question, answer, options, isopen, language="english"):
         if isopen:
             return (
-                'Reply: "correct" or "incorrect". Explain your reasoning.\n'
-                f'Here is a question: {question}\n'
-                f'Do you think this answer is correct: {answer}?\n'
+                f'Reply with "correct" or "incorrect" in {language}. Then, briefly explain your reasoning in {language}.\n'
+                f'Question: {question}\n'
+                f'User\'s Answer: {answer}?\n'
             )
-        elif not isopen:
+        else:
             return (
-                'Reply: "correct" or "incorrect". Explain your reasoning.\n'
-                f'Here is a question: {question}\n'
-                f'Here are the options: {str(options)}'
-                f'Do you think this answer is correct: {answer}?\n'
+                f'Reply with "correct" or "incorrect" in {language}. Then, briefly explain your reasoning in {language}.\n'
+                f'Question: {question}\n'
+                f'Options: {str(options)}'
+                f'User\'s Answer: {answer}?\n'
             )
 
 
 class CoursePromptBuilder:
     @staticmethod
-    def build_course_structure_prompt(topic, final_score, assessed_answers, lesson_duration=15):
+    def build_course_structure_prompt(topic, final_score, assessed_answers, language="english", lesson_duration=15):
         assessed_answers_string = "\n".join([
             f"Q: {item['question']}\nA: {item['answer']}\nAssessment: {item['assessment']}\n"
             for item in assessed_answers
@@ -83,8 +94,12 @@ class CoursePromptBuilder:
             - The course should include units. Each unit should contain lessons (with estimated completion time in minutes) and a test.
             - Do NOT generate lesson or test content yet—only the structure.
             - Lessons should be appropriately sequenced for progressive learning.
+            - Your entire response MUST be a valid JSON object.
+            - Generate the user-visible string values in the JSON (like course_title, unit_title, lesson_title, test_title) in the following language: {language}.
+            - Keep all JSON keys (like "course_title", "units", "lessons", "estimated_time_minutes", "test", "test_title") in English.
 
-            Return the course structure as a valid JSON object using the format:
+
+            Return the course structure using the format:
 
             {{
               "course_title": "Personalized Course for {topic}",
@@ -108,12 +123,13 @@ class CoursePromptBuilder:
 
 class LessonPromptBuilder:
     @staticmethod
-    def build_lesson_content_prompt(lesson_title, unit_title, lesson_duration=15):
+    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15):
         return f"""
             You are an expert AI tutor.
 
             Generate a comprehensive, structured, and beginner-friendly lesson on the topic: "{lesson_title}".
             This lesson is part of the unit: "{unit_title}".
+            The entire lesson content MUST be in {language}.
 
             Guidelines:
             - Use clear Markdown formatting (## Headings, bullet points, code blocks if needed).
@@ -126,7 +142,7 @@ class LessonPromptBuilder:
             - All images must follow this format exactly:
               [IMAGE_PROMPT: "A grayscale, schematic-style diagram with no text, showing ..."]
 
-            Example: 
+            Example:
             [IMAGE_PROMPT: "A grayscale, schematic-style diagram with no text, showing the layers of a neural network"]
 
             IMPORTANT: Do NOT include any text in the images themselves, as the AI image generator struggles with rendering text in images. I want the images to be a grayscale, schematic diagram.

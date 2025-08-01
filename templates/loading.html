@@ -1,79 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Loading...</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: #2A3F4A;
-            color: #F0F0F0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        .loading-container {
-            max-width: 500px;
-        }
-        #spinner {
-            margin: 25px auto;
-            width: 50px;
-            height: 50px;
-            border: 6px solid rgba(255, 255, 255, 0.2);
-            border-top: 6px solid #5cb85c;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        p {
-            font-size: 1.2em;
-            color: #F0F0F0;
-        }
-    </style>
+<title>{% if lang == 'russian' %}Загрузка...{% else %}Loading...{% endif %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+font-family: 'Roboto', sans-serif;
+background: #2A3F4A;
+color: #F0F0F0;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+margin: 0;
+text-align: center;
+}
+.loading-container {
+max-width: 500px;
+}
+#spinner {
+margin: 25px auto;
+width: 50px;
+height: 50px;
+border: 6px solid rgba(255, 255, 255, 0.2);
+border-top: 6px solid #5cb85c;
+border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+@keyframes spin {
+to { transform: rotate(360deg); }
+}
+p {
+font-size: 1.2em;
+color: #F0F0F0;
+}
+</style>
 </head>
 <body>
-    <div class="loading-container">
-        <div id="spinner"></div>
-        <p>{{ message }}</p>
-    </div>
+<div class="loading-container">
+<div id="spinner"></div>
+<p>{{ message }}</p>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fetchUrl = "{{ fetch_url|safe }}";
+        const lang = '{{ lang }}';
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const fetchUrl = "{{ fetch_url|safe }}";
+        const errorMessages = {
+            english: {
+                network: 'Network response was not ok',
+                occurred: 'An error occurred: ',
+                unexpected: 'An unexpected issue occurred. Returning to the home page.',
+                failed: 'Failed to load data from the server. Please try again. '
+            },
+            russian: {
+                network: 'Сетевой ответ был не в порядке',
+                occurred: 'Произошла ошибка: ',
+                unexpected: 'Произошла непредвиденная проблема. Возврат на главную страницу.',
+                failed: 'Не удалось загрузить данные с сервера. Пожалуйста, попробуйте еще раз. '
+            }
+        };
+        const messages = errorMessages[lang] || errorMessages.english;
 
-            fetch(fetchUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Check if the server responded with an error message
-                    if (data.error) {
-                        alert("An error occurred: " + data.error);
-                    }
+        fetch(fetchUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(messages.network + ': ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Check if the server responded with an error message
+                if (data.error) {
+                    alert(messages.occurred + data.error);
+                }
 
-                    // Redirect if a URL is provided
-                    if (data.redirect_url) {
-                        window.location.href = data.redirect_url;
-                    } else {
-                        // Fallback if there is an error but no redirect URL
-                        alert('An unexpected issue occurred. Returning to the home page.');
-                        window.location.href = "/";
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    alert('Failed to load data from the server. Please try again. ' + error);
+                // Redirect if a URL is provided
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Fallback if there is an error but no redirect URL
+                    alert(messages.unexpected);
                     window.location.href = "/";
-                });
-        });
-    </script>
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert(messages.failed + error);
+                window.location.href = "/";
+            });
+    });
+</script>
 </body>
 </html>

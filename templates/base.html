@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}Arcane{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #2A3F4A;
+            color: #F0F0F0;
+            margin: 0;
+            padding: 0;
+        }
+        .top-nav {
+            background: #344955;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .top-nav .logo a {
+            color: #F0F0F0;
+            font-weight: 700;
+            font-size: 1.5em;
+            text-decoration: none;
+        }
+        .top-nav .nav-links a {
+            color: #F0F0F0;
+            text-decoration: none;
+            margin-left: 25px;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .top-nav .nav-links a:hover {
+            color: #5cb85c;
+        }
+        .page-content {
+            padding: 40px 20px;
+        }
+        .flash-message {
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+        }
+        .success { background-color: #5cb85c; }
+        .danger { background-color: #d9534f; }
+        .warning { background-color: #f0ad4e; }
+        .info { background-color: #5bc0de; }
+    </style>
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="top-nav">
+        <div class="logo">
+            <a href="{{ url_for('course_dashboard') }}">🧠 Arcane</a>
+        </div>
+        <div class="nav-links">
+            <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.username }}{% else %}Welcome, {{ current_user.username }}{% endif %}</span>
+            <a href="{{ url_for('course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
+            <a href="{{ url_for('settings') }}">{% if current_user.language == 'russian' %}Настройки{% else %}Settings{% endif %}</a>
+            <a href="{{ url_for('logout') }}">{% if current_user.language == 'russian' %}Выйти{% else %}Logout{% endif %}</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="page-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

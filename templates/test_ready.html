@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Test Ready</title>
+<title>{% if lang == 'russian' %}Тест готов{% else %}Test Ready{% endif %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <style>
 body {
@@ -52,10 +52,10 @@ margin: 0;
 </head>
 <body>
     <div class="popup">
-        <h2>✅ Your Test is Ready!</h2>
-        <p>Click below to begin the challenge.</p>
+        <h2>✅ {% if lang == 'russian' %}Ваш тест готов!{% else %}Your Test is Ready!{% endif %}</h2>
+        <p>{% if lang == 'russian' %}Нажмите ниже, чтобы начать испытание.{% else %}Click below to begin the challenge.{% endif %}</p>
         <form action="{{ url_for('assessment') }}" method="get">
-            <button type="submit">🚀 Begin</button>
+            <button type="submit">{% if lang == 'russian' %}🚀 Начать{% else %}🚀 Begin{% endif %}</button>
         </form>
     </div>
 </body>
