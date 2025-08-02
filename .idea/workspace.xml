@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Fixed markdown format on lessons and assessments">
-      <change beforePath="$PROJECT_DIR$/templates/course.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/course.html" afterDir="false" />
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Made Ideal Lesson Length (in minutes) setting work.">
+      <change beforePath="$PROJECT_DIR$/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,7 +160,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754163316232</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Made Ideal Lesson Length (in minutes) setting work.">
+      <option name="closed" value="true" />
+      <created>1754163531917</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1754163531917</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -168,7 +176,8 @@
     <MESSAGE value="Added new language and improved UI" />
     <MESSAGE value="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;" />
     <MESSAGE value="Fixed markdown format on lessons and assessments" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed markdown format on lessons and assessments" />
+    <MESSAGE value="Made Ideal Lesson Length (in minutes) setting work." />
+    <option name="LAST_COMMIT_MESSAGE" value="Made Ideal Lesson Length (in minutes) setting work." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
