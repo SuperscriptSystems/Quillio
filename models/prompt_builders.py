@@ -134,7 +134,7 @@ class LessonPromptBuilder:
             Guidelines:
             - Use clear Markdown formatting (## Headings, bullet points, code blocks if needed).
             - Include step-by-step explanations, illustrative examples, and analogies.
-            - The content should be suitable for a {lesson_duration}-minute self-paced lesson.
+            - The lesson's length MUST be calibrated for a {lesson_duration}-minute completion time for an average student. A shorter duration means a more concise, high-level overview. A longer duration allows for more depth, detail, and examples.
             - Use concise, easy-to-understand language for learners at various levels.
 
             Visual Aids:

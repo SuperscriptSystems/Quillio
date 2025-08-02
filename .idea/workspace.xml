@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;">
-      <change beforePath="$PROJECT_DIR$/.idea/ARCANE.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ARCANE.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Fixed markdown format on lessons and assessments">
+      <change beforePath="$PROJECT_DIR$/templates/course.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/course.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -156,14 +152,23 @@
       <option name="project" value="LOCAL" />
       <updated>1754067579161</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Fixed markdown format on lessons and assessments">
+      <option name="closed" value="true" />
+      <created>1754163316232</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1754163316232</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added initial user assessment and course generation" />
     <MESSAGE value="Added new language and improved UI" />
     <MESSAGE value="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;" />
+    <MESSAGE value="Fixed markdown format on lessons and assessments" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed markdown format on lessons and assessments" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

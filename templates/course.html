@@ -30,7 +30,7 @@
                     {% if lesson_obj %}
                         <li class="{{ 'completed' if lesson_obj.is_completed }}">
                             <a href="{{ url_for('loading_lesson', lesson_id=lesson_obj.id) }}">{{ lesson_obj.lesson_title }}</a>
-                            <span class="lesson-time">~{{ lesson_data.estimated_time_minutes }} {% if lang == 'russian' %}мин{% else %}mins{% endif %}</span>
+                            <span class="lesson-time">~{{ current_user.preferred_lesson_length }} {% if lang == 'russian' %}мин{% else %}mins{% endif %}</span>
                         </li>
                     {% endif %}
                 {% endfor %}
