@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Added new language and improved UI">
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;">
+      <change beforePath="$PROJECT_DIR$/.idea/ARCANE.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ARCANE.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/configuration.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/configuration.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -47,17 +48,18 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.testingsmthn.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/alexs/PycharmProjects/ARCANE/run.py&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Python.app.executor": "Run",
+    "Python.testingsmthn.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "C:/Users/alexs/PycharmProjects/ARCANE/run.py",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\alexs\PycharmProjects\ARCANE\app" />
@@ -75,8 +77,12 @@
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="SECRET_KEY" value="dueywuhwefhudhfuheuhfusdffse" />
         <env name="API_KEY_OPENAI" value="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" />
+        <env name="SECRET_KEY" value="dueywuhwefhudhfuheuhfusdffse" />
+        <env name="GEMINI_API_KEY" value="AIzaSyCobLPAnF-xqTWNT5wMc_93CT3fnqJu2iQ" />
+        <env name="CommonProgramFiles" value="&quot;C:\Program Files\Common Files&quot;" />
+        <env name="CommonProgramFiles(x86)" value="&quot;C:\Program Files (x86)\Common Files&quot;" />
+        <env name="CommonProgramW6432" value="&quot;C:\Program Files\Common Files&quot;" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.13 (ARCANE)" />
@@ -142,12 +148,32 @@
       <option name="project" value="LOCAL" />
       <updated>1754066989208</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;">
+      <option name="closed" value="true" />
+      <created>1754067579161</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1754067579161</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added initial user assessment and course generation" />
     <MESSAGE value="Added new language and improved UI" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added new language and improved UI" />
+    <MESSAGE value="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed typo bug &quot;table_name&quot; to &quot;__tablename__&quot;" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/app/routes.py</url>
+          <line>266</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
