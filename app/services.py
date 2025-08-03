@@ -27,7 +27,7 @@ def ask_ai(prompt, model="gemini-1.5-flash", expect_json=True):
 
     generation_config = {
         "temperature": 0.7,
-        "maxOutputTokens": 4096, # Increased token limit for Pro model
+        "maxOutputTokens": 4096,
     }
     if expect_json:
         generation_config["response_mime_type"] = "application/json"
