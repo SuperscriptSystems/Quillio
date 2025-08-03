@@ -16,7 +16,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # --- AI Interaction Function ---
 def ask_ai(prompt, model="gemini-1.5-flash", expect_json=True):
     """
-    Sends a prompt to the Google Gemini API and returns the text response.
+    Sends a prompt to the Google Gemini API using a specified model.
+    Note: User requested specific model versions. Using the latest available stable versions.
+    - 'gemini-1.5-flash' for tests and assessments.
+    - 'gemini-1.5-pro' for course and lesson generation.
     """
     if not GEMINI_API_KEY:
         print("Error: GEMINI_API_KEY environment variable is not set.")
@@ -27,7 +30,7 @@ def ask_ai(prompt, model="gemini-1.5-flash", expect_json=True):
 
     generation_config = {
         "temperature": 0.7,
-        "maxOutputTokens": 3000,
+        "maxOutputTokens": 4096, # Increased token limit for Pro model
     }
     if expect_json:
         generation_config["response_mime_type"] = "application/json"
@@ -67,7 +70,7 @@ def generate_test_service(topic, format_type, additional_context, language):
     else:
         prompt = TestPromptBuilder.build_open_question_prompt(topic, additional_context, language)
 
-    raw_output = ask_ai(prompt)
+    raw_output = ask_ai(prompt, model="gemini-1.5-flash")
     if not raw_output or "Error:" in raw_output:
         print(f"Failed to generate test. AI response: {raw_output}")
         return None
@@ -79,7 +82,7 @@ def generate_test_service(topic, format_type, additional_context, language):
 
 
 def evaluate_answers_service(questions, user_answers, is_open, language):
-    answer_checker = AnswerChecker(lambda p: ask_ai(p, expect_json=False))
+    answer_checker = AnswerChecker(lambda p: ask_ai(p, model="gemini-1.5-flash", expect_json=False))
     detailed_results = []
     for i, answer_item in enumerate(user_answers):
         q_obj = questions[i]
@@ -93,7 +96,7 @@ def calculate_final_score_service(detailed_results):
     for i, result in enumerate(detailed_results, 1):
         prompt += f"Q{i}: {result['question']}\nA{i}: {result['answer']}\nAssessment: {result['assessment']}\n\n"
     prompt += "Return just the number."
-    result_text = ask_ai(prompt, expect_json=False)
+    result_text = ask_ai(prompt, model="gemini-1.5-flash", expect_json=False)
     return int(''.join(filter(str.isdigit, result_text))) if result_text and "Error:" not in result_text else 0
 
 
@@ -101,7 +104,7 @@ def calculate_final_score_service(detailed_results):
 def create_course_service(user, topic, final_score, assessed_answers):
     prompt = CoursePromptBuilder.build_course_structure_prompt(topic, final_score, assessed_answers, user.language,
                                                                user.preferred_lesson_length)
-    raw_course = ask_ai(prompt)
+    raw_course = ask_ai(prompt, model="gemini-1.5-pro")
     if not raw_course or "Error:" in raw_course:
         print(f"Failed to create course. AI response: {raw_course}")
         return None
@@ -127,7 +130,7 @@ def generate_lesson_content_service(lesson, user):
 
     prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language,
                                                              user.preferred_lesson_length)
-    markdown_text = ask_ai(prompt, expect_json=False)
+    markdown_text = ask_ai(prompt, model="gemini-1.5-pro", expect_json=False)
     if not markdown_text or "Error:" in markdown_text:
         print(f"Failed to generate lesson content. AI response: {markdown_text}")
         lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"
