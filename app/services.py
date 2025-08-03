@@ -17,9 +17,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 def ask_ai(prompt, model="gemini-1.5-flash", expect_json=True):
     """
     Sends a prompt to the Google Gemini API using a specified model.
-    Note: User requested specific model versions. Using the latest available stable versions.
-    - 'gemini-1.5-flash' for tests and assessments.
-    - 'gemini-1.5-pro' for course and lesson generation.
     """
     if not GEMINI_API_KEY:
         print("Error: GEMINI_API_KEY environment variable is not set.")
