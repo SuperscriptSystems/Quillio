@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/ask_ai.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/ai_clients.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
-    </list>
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files and made it use different ai models for different tasks." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -219,7 +214,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754336768586</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Deleted useless files and made it use different ai models for different tasks.">
+      <option name="closed" value="true" />
+      <created>1754338187357</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1754338187357</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -233,6 +236,7 @@
     <MESSAGE value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content." />
     <MESSAGE value="Changed models to openai" />
     <MESSAGE value="Deleted useless files" />
-    <option name="LAST_COMMIT_MESSAGE" value="Deleted useless files" />
+    <MESSAGE value="Deleted useless files and made it use different ai models for different tasks." />
+    <option name="LAST_COMMIT_MESSAGE" value="Deleted useless files and made it use different ai models for different tasks." />
   </component>
 </project>
