@@ -4,8 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Fixed potential debugger problems.">
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content.">
+      <change afterPath="$PROJECT_DIR$/app/ask_ai.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/ask_ai.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/prompt_builders.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/prompt_builders.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/results.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/results.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,18 +50,18 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Python.app.executor": "Run",
-    "Python.testingsmthn.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "C:/Users/alexs/PycharmProjects/ARCANE/run.py",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testingsmthn.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/alexs/PycharmProjects/ARCANE/run.py&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\alexs\PycharmProjects\ARCANE\app" />
@@ -72,10 +78,10 @@
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="API_KEY_OPENAI" value="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" />
-        <env name="SECRET_KEY" value="dueywuhwefhudhfuheuhfusdffse" />
+        <env name="API_KEY_OPENAI" value="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" />
         <env name="GEMINI_API_KEY" value="AIzaSyCobLPAnF-xqTWNT5wMc_93CT3fnqJu2iQ" />
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="SECRET_KEY" value="dueywuhwefhudhfuheuhfusdffse" />
         <env name="CommonProgramFiles" value="&quot;C:\Program Files\Common Files&quot;" />
         <env name="CommonProgramFiles(x86)" value="&quot;C:\Program Files (x86)\Common Files&quot;" />
         <env name="CommonProgramW6432" value="&quot;C:\Program Files\Common Files&quot;" />
@@ -176,7 +182,31 @@
       <option name="project" value="LOCAL" />
       <updated>1754163627032</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content">
+      <option name="closed" value="true" />
+      <created>1754182325949</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1754182325949</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content.">
+      <option name="closed" value="true" />
+      <created>1754182380544</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1754182380544</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content.">
+      <option name="closed" value="true" />
+      <created>1754182403856</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1754182403856</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -186,17 +216,8 @@
     <MESSAGE value="Fixed markdown format on lessons and assessments" />
     <MESSAGE value="Made Ideal Lesson Length (in minutes) setting work." />
     <MESSAGE value="Fixed potential debugger problems." />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed potential debugger problems." />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/app/routes.py</url>
-          <line>266</line>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content" />
+    <MESSAGE value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content." />
+    <option name="LAST_COMMIT_MESSAGE" value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content." />
   </component>
 </project>

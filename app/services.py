@@ -1,63 +1,12 @@
-import requests
 import json
-import os
 import re
 import markdown
+from app.ask_ai import ask_ai
 from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder
 from models.json_extractor import JsonExtractor
 from models.fulltest import Test
 from models.question import Question
-from models.answer_checker import AnswerChecker
 from app.models import db, Course, Lesson
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-
-# --- AI Interaction Function ---
-def ask_ai(prompt, model="gemini-1.5-flash", expect_json=True):
-    """
-    Sends a prompt to the Google Gemini API using a specified model.
-    """
-    if not GEMINI_API_KEY:
-        print("Error: GEMINI_API_KEY environment variable is not set.")
-        return "Configuration Error: The server's API key is not set."
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-    headers = {'Content-Type': 'application/json'}
-
-    generation_config = {
-        "temperature": 0.7,
-        "maxOutputTokens": 4096,
-    }
-    if expect_json:
-        generation_config["response_mime_type"] = "application/json"
-
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": generation_config
-    }
-
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(data))
-        response.raise_for_status()
-
-        result = response.json()
-
-        if 'candidates' in result and result['candidates'][0]['content']['parts'][0]['text']:
-            return result['candidates'][0]['content']['parts'][0]['text']
-        else:
-            error_message = f"Content generation failed or was blocked. Response: {result}"
-            print(error_message)
-            return error_message
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error communicating with Gemini API: {e}")
-        if e.response:
-            print(f"Error Response Body: {e.response.text}")
-        return "Error: Could not connect to the AI service."
-    except (KeyError, IndexError) as e:
-        print(f"Error parsing Gemini API response: {e}. Full response: {response.json()}")
-        return "Error: Invalid response format from the AI service."
 
 
 # --- Test and Assessment Services ---
@@ -67,7 +16,7 @@ def generate_test_service(topic, format_type, additional_context, language):
     else:
         prompt = TestPromptBuilder.build_open_question_prompt(topic, additional_context, language)
 
-    raw_output = ask_ai(prompt, model="gemini-1.5-flash")
+    raw_output = ask_ai(prompt, model="gpt-4o-mini", json_mode=True)
     if not raw_output or "Error:" in raw_output:
         print(f"Failed to generate test. AI response: {raw_output}")
         return None
@@ -78,30 +27,72 @@ def generate_test_service(topic, format_type, additional_context, language):
                 questions=questions)
 
 
-def evaluate_answers_service(questions, user_answers, is_open, language):
-    answer_checker = AnswerChecker(lambda p: ask_ai(p, model="gemini-1.5-flash", expect_json=False))
-    detailed_results = []
-    for i, answer_item in enumerate(user_answers):
-        q_obj = questions[i]
-        assessment = answer_checker.check(q_obj.question, answer_item['answer'], q_obj.options, is_open, language)
-        detailed_results.append({"question": q_obj.question, "answer": answer_item['answer'], "assessment": assessment})
-    return detailed_results
+def evaluate_answers_service(questions, user_answers, language):
+    """
+    Evaluates all user answers in a single, efficient batch API call.
+    """
+
+    questions_and_answers = []
+    for i, q_obj in enumerate(questions):
+        questions_and_answers.append({
+            "question": q_obj.question,
+            "answer": user_answers[i]['answer']
+        })
+
+    prompt = AnswerPromptBuilder.build_batch_check_prompt(questions_and_answers, language)
 
 
-def calculate_final_score_service(detailed_results):
+    response_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=True)
+    if not response_text or "Error:" in response_text:
+        print(f"Failed to evaluate answers in batch. AI response: {response_text}")
+        return []
+
+    try:
+        response_json = JsonExtractor.extract_json(response_text)
+        assessments = response_json.get("assessments", [])
+
+        detailed_results = []
+        for i, qa in enumerate(questions_and_answers):
+            detailed_results.append({
+                "question": qa["question"],
+                "answer": qa["answer"],
+                "assessment": next((item['assessment'] for item in assessments if item['id'] == i), "Evaluation Error")
+            })
+        return detailed_results
+    except (ValueError, KeyError) as e:
+        print(f"Error parsing batch assessment response: {e}")
+        return []
+
+
+def generate_knowledge_assessment_service(detailed_results):
+    """Generates a qualitative written assessment of the user's knowledge."""
+    prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Speak directly to the user (e.g., 'Your responses indicate...'). Do not use markdown.\n\n"
+    for i, result in enumerate(detailed_results, 1):
+        prompt += f"Q{i}: {result['question']}\nA{i}: {result['answer']}\nAssessment: {result['assessment']}\n\n"
+
+
+    assessment_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
+    return assessment_text if assessment_text and "Error:" not in assessment_text else "Could not generate assessment."
+
+
+def calculate_percentage_score_service(detailed_results):
+    """Calculates a numerical score from 0-100 based on assessments (for unit tests)."""
     prompt = "Based on these answers and evaluations, give a final score from 0-100:\n\n"
     for i, result in enumerate(detailed_results, 1):
         prompt += f"Q{i}: {result['question']}\nA{i}: {result['answer']}\nAssessment: {result['assessment']}\n\n"
     prompt += "Return just the number."
-    result_text = ask_ai(prompt, model="gemini-1.5-flash", expect_json=False)
+
+
+    result_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
     return int(''.join(filter(str.isdigit, result_text))) if result_text and "Error:" not in result_text else 0
 
 
 # --- Course and Lesson Services ---
-def create_course_service(user, topic, final_score, assessed_answers):
-    prompt = CoursePromptBuilder.build_course_structure_prompt(topic, final_score, assessed_answers, user.language,
+def create_course_service(user, topic, knowledge_assessment, assessed_answers):
+    prompt = CoursePromptBuilder.build_course_structure_prompt(topic, knowledge_assessment, assessed_answers,
+                                                               user.language,
                                                                user.preferred_lesson_length)
-    raw_course = ask_ai(prompt, model="gemini-1.5-pro")
+    raw_course = ask_ai(prompt, model="gpt-4o", json_mode=True)
     if not raw_course or "Error:" in raw_course:
         print(f"Failed to create course. AI response: {raw_course}")
         return None
@@ -127,7 +118,7 @@ def generate_lesson_content_service(lesson, user):
 
     prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language,
                                                              user.preferred_lesson_length)
-    markdown_text = ask_ai(prompt, model="gemini-1.5-pro", expect_json=False)
+    markdown_text = ask_ai(prompt, model="gpt-4o", json_mode=False)
     if not markdown_text or "Error:" in markdown_text:
         print(f"Failed to generate lesson content. AI response: {markdown_text}")
         lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"

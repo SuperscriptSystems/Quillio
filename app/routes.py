@@ -1,13 +1,13 @@
-# app/routes.py
-
 from flask import render_template, request, session, redirect, url_for, jsonify, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from app.configuration import app, db # Import the app and db instance from configuration.py
+import time
+from app.configuration import app, db
 from app.models import User, Course, Lesson
 from app.services import (
     generate_test_service,
     evaluate_answers_service,
-    calculate_final_score_service,
+    generate_knowledge_assessment_service,
+    calculate_percentage_score_service,
     create_course_service,
     generate_lesson_content_service,
 )
@@ -150,7 +150,11 @@ def test_ready():
 @login_required
 def show_results():
     if 'assessed_answers' not in session: return redirect(url_for('home'))
-    return render_template('results.html', answers=session['assessed_answers'], final_score=session.get('final_score'), course_id=session.get('current_course_id'), lang=current_user.language)
+    return render_template('results.html',
+                           answers=session['assessed_answers'],
+                           knowledge_assessment=session.get('knowledge_assessment'),
+                           course_id=session.get('current_course_id'),
+                           lang=current_user.language)
 
 
 # --- Loading and Data Fetching Routes ---
@@ -175,11 +179,18 @@ def loading(context):
 def get_results_data():
     test = load_test_from_dict(session['test'])
     detailed_results = evaluate_answers_service(test.questions, session['answers'], is_open=False, language=current_user.language)
-    final_score = calculate_final_score_service(detailed_results)
-    new_course = create_course_service(current_user, test.topic, final_score, detailed_results)
+    time.sleep(1) # Delay to avoid rate limiting
+    knowledge_assessment = generate_knowledge_assessment_service(detailed_results)
+    time.sleep(1) # Another delay
+    new_course = create_course_service(current_user, test.topic, knowledge_assessment, detailed_results)
+
+    # Gracefully handle API failures for course creation
+    if not new_course:
+        flash("We're sorry, but we couldn't create your course at this time due to a high volume of requests to our AI service. Please try again in a few moments.", "danger")
+        return jsonify({'redirect_url': url_for('home')})
 
     session['assessed_answers'] = detailed_results
-    session['final_score'] = final_score
+    session['knowledge_assessment'] = knowledge_assessment
     session['current_course_id'] = new_course.id
     session.pop('test', None)
     session.pop('answers', None)
@@ -285,7 +296,8 @@ def get_unit_results_data():
     user_answers = session['current_unit_test_answers']
 
     detailed_results = evaluate_answers_service(test_info.questions, user_answers, False, current_user.language)
-    final_score = calculate_final_score_service(detailed_results)
+    time.sleep(1)
+    final_score = calculate_percentage_score_service(detailed_results)
 
     session['unit_test_final_results'] = {
         'answers': detailed_results,

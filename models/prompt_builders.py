@@ -59,6 +59,48 @@ class TestPromptBuilder:
 
 class AnswerPromptBuilder:
     @staticmethod
+    def build_batch_check_prompt(questions_and_answers, language="english"):
+        """
+        Builds a prompt to check all answers in a single API call.
+        """
+        qa_string = ""
+        for i, qa in enumerate(questions_and_answers):
+            qa_string += f"""
+            {{
+                "id": {i},
+                "question": "{qa['question']}",
+                "user_answer": "{qa['answer']}"
+            }}
+            """
+
+        return f"""
+            You are an expert evaluator. Below is a list of questions and the user's answers.
+            For each question, reply with "correct" or "incorrect" and then provide a brief, one-sentence explanation for your reasoning in {language}.
+
+            Evaluate the following items:
+            {qa_string}
+
+            Your entire response MUST be a valid JSON object.
+            The JSON object should have a single key "assessments", which is an array.
+            Each object in the array must contain the "id" of the question and the "assessment" string.
+            The order of the assessments in the array MUST match the order of the questions provided.
+
+            Example format:
+            {{
+                "assessments": [
+                    {{
+                        "id": 0,
+                        "assessment": "correct. Your explanation was spot on."
+                    }},
+                    {{
+                        "id": 1,
+                        "assessment": "incorrect. This is actually caused by..."
+                    }}
+                ]
+            }}
+        """
+
+    @staticmethod
     def build_check_prompt(question, answer, options, isopen, language="english"):
         if isopen:
             return (
@@ -77,20 +119,22 @@ class AnswerPromptBuilder:
 
 class CoursePromptBuilder:
     @staticmethod
-    def build_course_structure_prompt(topic, final_score, assessed_answers, language="english", lesson_duration=15):
+    def build_course_structure_prompt(topic, knowledge_assessment, assessed_answers, language="english", lesson_duration=15):
         assessed_answers_string = "\n".join([
             f"Q: {item['question']}\nA: {item['answer']}\nAssessment: {item['assessment']}\n"
             for item in assessed_answers
         ])
 
         return f"""
-            A learner has completed a test on the topic: "{topic}" and scored {final_score}%.
-            Below is an assessment of their responses:
+            A learner has completed a test on the topic: "{topic}".
+            Here is a qualitative assessment of their knowledge based on the test:
+            "{knowledge_assessment}"
 
+            Below is a detailed breakdown of their responses:
             {assessed_answers_string}
 
             Your task:
-            - Based on their performance, design a personalized course outline to help them improve.
+            - Based on their performance and the overall assessment, design a personalized course outline to help them improve.
             - The course should include units. Each unit should contain lessons (with estimated completion time in minutes) and a test.
             - Do NOT generate lesson or test content yet—only the structure.
             - Lessons should be appropriately sequenced for progressive learning.
