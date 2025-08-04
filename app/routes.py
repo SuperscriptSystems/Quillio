@@ -174,19 +174,24 @@ def loading(context):
         return redirect(url_for('home'))
     return render_template('loading.html', message=message, fetch_url=fetch_url, lang=lang)
 
+
 @app.route('/get_results_data')
 @login_required
 def get_results_data():
     test = load_test_from_dict(session['test'])
-    detailed_results = evaluate_answers_service(test.questions, session['answers'], is_open=False, language=current_user.language)
-    time.sleep(1) # Delay to avoid rate limiting
+
+    detailed_results = evaluate_answers_service(test.questions, session['answers'], current_user.language)
+
+    time.sleep(1)  # Delay can remain if you want
     knowledge_assessment = generate_knowledge_assessment_service(detailed_results)
-    time.sleep(1) # Another delay
+    time.sleep(1)  # Another delay
     new_course = create_course_service(current_user, test.topic, knowledge_assessment, detailed_results)
 
     # Gracefully handle API failures for course creation
     if not new_course:
-        flash("We're sorry, but we couldn't create your course at this time due to a high volume of requests to our AI service. Please try again in a few moments.", "danger")
+        flash(
+            "We're sorry, but we couldn't create your course at this time due to a high volume of requests to our AI service. Please try again in a few moments.",
+            "danger")
         return jsonify({'redirect_url': url_for('home')})
 
     session['assessed_answers'] = detailed_results

@@ -4,14 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content.">
-      <change afterPath="$PROJECT_DIR$/app/ask_ai.py" afterDir="false" />
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/ask_ai.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/ai_clients.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/ask_ai.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/prompt_builders.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/prompt_builders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/results.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/results.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -206,7 +203,23 @@
       <option name="project" value="LOCAL" />
       <updated>1754182403856</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Changed models to openai">
+      <option name="closed" value="true" />
+      <created>1754336699278</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1754336699278</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Deleted useless files">
+      <option name="closed" value="true" />
+      <created>1754336768586</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1754336768586</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -218,6 +231,8 @@
     <MESSAGE value="Fixed potential debugger problems." />
     <MESSAGE value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content" />
     <MESSAGE value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content." />
-    <option name="LAST_COMMIT_MESSAGE" value="Made it use Gemini 2.5 flash for tests, Gemini 2.5 pro for courses plan and content." />
+    <MESSAGE value="Changed models to openai" />
+    <MESSAGE value="Deleted useless files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Deleted useless files" />
   </component>
 </project>

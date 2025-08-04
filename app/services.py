@@ -1,7 +1,8 @@
 import json
 import re
+import time
 import markdown
-from app.ask_ai import ask_ai
+from app.ai_clients import ask_openai, ask_gemini  # Updated import
 from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder
 from models.json_extractor import JsonExtractor
 from models.fulltest import Test
@@ -9,16 +10,16 @@ from models.question import Question
 from app.models import db, Course, Lesson
 
 
-# --- Test and Assessment Services ---
+# --- Test and Assessment Services (Using Gemini) ---
 def generate_test_service(topic, format_type, additional_context, language):
-    if format_type == "multiple_choice":
-        prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_context, language)
-    else:
-        prompt = TestPromptBuilder.build_open_question_prompt(topic, additional_context, language)
+    """Generates a test using the Gemini model."""
+    prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_context, language)
 
-    raw_output = ask_ai(prompt, model="gpt-4o-mini", json_mode=True)
+    # Using Gemini for test generation
+    raw_output = ask_gemini(prompt, json_mode=True)
+
     if not raw_output or "Error:" in raw_output:
-        print(f"Failed to generate test. AI response: {raw_output}")
+        print(f"Failed to generate test with Gemini. AI response: {raw_output}")
         return None
     test_data = JsonExtractor.extract_json(raw_output)
     questions = [Question(question=q.get("question"), options=q.get("options", {})) for q in
@@ -28,73 +29,65 @@ def generate_test_service(topic, format_type, additional_context, language):
 
 
 def evaluate_answers_service(questions, user_answers, language):
-    """
-    Evaluates all user answers in a single, efficient batch API call.
-    """
+    """Evaluates answers using the Gemini model."""
+    qa_list = [{"question": q.question, "answer": ua['answer']} for q, ua in zip(questions, user_answers)]
+    prompt = AnswerPromptBuilder.build_batch_check_prompt(qa_list, language)
 
-    questions_and_answers = []
-    for i, q_obj in enumerate(questions):
-        questions_and_answers.append({
-            "question": q_obj.question,
-            "answer": user_answers[i]['answer']
-        })
+    # Using Gemini for answer evaluation
+    response_text = ask_gemini(prompt, json_mode=True)
 
-    prompt = AnswerPromptBuilder.build_batch_check_prompt(questions_and_answers, language)
-
-
-    response_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=True)
     if not response_text or "Error:" in response_text:
-        print(f"Failed to evaluate answers in batch. AI response: {response_text}")
+        print(f"Failed to evaluate answers with Gemini. AI response: {response_text}")
         return []
 
     try:
         response_json = JsonExtractor.extract_json(response_text)
         assessments = response_json.get("assessments", [])
-
         detailed_results = []
-        for i, qa in enumerate(questions_and_answers):
-            detailed_results.append({
-                "question": qa["question"],
-                "answer": qa["answer"],
-                "assessment": next((item['assessment'] for item in assessments if item['id'] == i), "Evaluation Error")
-            })
+        for i, qa in enumerate(qa_list):
+            assessment_text = next((item['assessment'] for item in assessments if item['id'] == i), "Evaluation Error")
+            detailed_results.append({"question": qa["question"], "answer": qa["answer"], "assessment": assessment_text})
         return detailed_results
     except (ValueError, KeyError) as e:
-        print(f"Error parsing batch assessment response: {e}")
+        print(f"Error parsing Gemini batch assessment response: {e}")
         return []
 
 
-def generate_knowledge_assessment_service(detailed_results):
-    """Generates a qualitative written assessment of the user's knowledge."""
-    prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Speak directly to the user (e.g., 'Your responses indicate...'). Do not use markdown.\n\n"
-    for i, result in enumerate(detailed_results, 1):
-        prompt += f"Q{i}: {result['question']}\nA{i}: {result['answer']}\nAssessment: {result['assessment']}\n\n"
-
-
-    assessment_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
-    return assessment_text if assessment_text and "Error:" not in assessment_text else "Could not generate assessment."
-
-
 def calculate_percentage_score_service(detailed_results):
-    """Calculates a numerical score from 0-100 based on assessments (for unit tests)."""
+    """Calculates a score using the Gemini model."""
     prompt = "Based on these answers and evaluations, give a final score from 0-100:\n\n"
-    for i, result in enumerate(detailed_results, 1):
-        prompt += f"Q{i}: {result['question']}\nA{i}: {result['answer']}\nAssessment: {result['assessment']}\n\n"
+    for result in detailed_results:
+        prompt += f"Q: {result['question']}\nA: {result['answer']}\nAssessment: {result['assessment']}\n\n"
     prompt += "Return just the number."
 
+    # Using Gemini for scoring
+    result_text = ask_gemini(prompt, json_mode=False)
 
-    result_text = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
     return int(''.join(filter(str.isdigit, result_text))) if result_text and "Error:" not in result_text else 0
 
 
-# --- Course and Lesson Services ---
+# --- Course and Lesson Services (Using OpenAI) ---
+def generate_knowledge_assessment_service(detailed_results):
+    """Generates a qualitative knowledge assessment using OpenAI's fast model."""
+    prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Speak directly to the user (e.g., 'Your responses indicate...'). Do not use markdown.\n\n"
+    for result in detailed_results:
+        prompt += f"Q: {result['question']}\nA: {result['answer']}\nAssessment: {result['assessment']}\n\n"
+
+    # Using OpenAI's faster model for this quick summary
+    assessment_text = ask_openai(prompt, model="gpt-4o-mini", json_mode=False)
+    return assessment_text if assessment_text and "Error:" not in assessment_text else "Could not generate assessment."
+
+
 def create_course_service(user, topic, knowledge_assessment, assessed_answers):
+    """Creates a course structure using OpenAI's powerful model."""
     prompt = CoursePromptBuilder.build_course_structure_prompt(topic, knowledge_assessment, assessed_answers,
-                                                               user.language,
-                                                               user.preferred_lesson_length)
-    raw_course = ask_ai(prompt, model="gpt-4o", json_mode=True)
+                                                               user.language, user.preferred_lesson_length)
+
+    # Using OpenAI's more powerful model for course structure
+    raw_course = ask_openai(prompt, model="gpt-4o", json_mode=True)
+
     if not raw_course or "Error:" in raw_course:
-        print(f"Failed to create course. AI response: {raw_course}")
+        print(f"Failed to create course with OpenAI. AI response: {raw_course}")
         return None
     course_json = JsonExtractor.extract_json(raw_course)
 
@@ -113,18 +106,21 @@ def create_course_service(user, topic, knowledge_assessment, assessed_answers):
 
 
 def generate_lesson_content_service(lesson, user):
+    """Generates lesson content using OpenAI's powerful model."""
     if lesson.html_content:
         return
 
     prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language,
                                                              user.preferred_lesson_length)
-    markdown_text = ask_ai(prompt, model="gpt-4o", json_mode=False)
-    if not markdown_text or "Error:" in markdown_text:
-        print(f"Failed to generate lesson content. AI response: {markdown_text}")
-        lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"
-        db.session.commit()
-        return
 
-    processed_text = re.sub(r'\[IMAGE_PROMPT:\s*"(.*?)"\]', r'<i>[Image Prompt: "\1"]</i>', markdown_text)
-    lesson.html_content = markdown.markdown(processed_text, extensions=["fenced_code", "tables"])
+    # Using OpenAI's powerful model for lesson content
+    markdown_text = ask_openai(prompt, model="gpt-4o", json_mode=False)
+
+    if not markdown_text or "Error:" in markdown_text:
+        print(f"Failed to generate lesson content with OpenAI. AI response: {markdown_text}")
+        lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"
+    else:
+        processed_text = re.sub(r'\[IMAGE_PROMPT:\s*"(.*?)"\]', r'<i>[Image Prompt: "\1"]</i>', markdown_text)
+        lesson.html_content = markdown.markdown(processed_text, extensions=["fenced_code", "tables"])
+
     db.session.commit()
