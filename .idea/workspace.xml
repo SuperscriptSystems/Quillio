@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files and made it use different ai models for different tasks." />
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files and made it use different ai models for different tasks.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,13 +73,9 @@
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
-        <env name="API_KEY_OPENAI" value="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" />
+        <env name="API_KEY_OPENAI" value="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" />
         <env name="GEMINI_API_KEY" value="AIzaSyCobLPAnF-xqTWNT5wMc_93CT3fnqJu2iQ" />
-        <env name="PYTHONUNBUFFERED" value="1" />
         <env name="SECRET_KEY" value="dueywuhwefhudhfuheuhfusdffse" />
-        <env name="CommonProgramFiles" value="&quot;C:\Program Files\Common Files&quot;" />
-        <env name="CommonProgramFiles(x86)" value="&quot;C:\Program Files (x86)\Common Files&quot;" />
-        <env name="CommonProgramW6432" value="&quot;C:\Program Files\Common Files&quot;" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.13 (ARCANE)" />
@@ -222,7 +221,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754338187357</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Deleted useless files and made it use different ai models for different tasks.">
+      <option name="closed" value="true" />
+      <created>1754338234501</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1754338234501</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
