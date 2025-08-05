@@ -20,54 +20,48 @@ except Exception as e:
 
 def ask_openai(prompt, model="gpt-4o-mini", json_mode=False):
     """
-    Sends a prompt to the OpenAI Chat API and returns the text response.
+    Sends a prompt to the OpenAI Chat API.
+    Returns a tuple: (text_response, tokens_used)
     """
     if not OPENAI_API_KEY:
-        return "Configuration Error: API_KEY_OPENAI is not set."
+        return "Configuration Error: API_KEY_OPENAI is not set.", 0
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {OPENAI_API_KEY}'
-    }
-    data = {
-        'model': model,
-        'messages': [{'role': 'user', 'content': prompt}],
-        'max_tokens': 4000,
-        'temperature': 0.7,
-    }
+    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {OPENAI_API_KEY}'}
+    data = {'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 4000, 'temperature': 0.7}
     if json_mode:
         data['response_format'] = {'type': 'json_object'}
 
     try:
         print(f"Sending request to OpenAI model: {model}...")
         response = requests.post(OPENAI_API_URL, headers=headers, data=json.dumps(data))
-        response.raise_for_status()  # Will raise an exception for 4XX/5XX status codes
+        response.raise_for_status()
         result = response.json()
         content = result['choices'][0]['message']['content']
+        tokens = result.get('usage', {}).get('total_tokens', 0)
         print("Received response from OpenAI model.")
-        return content
+        return content, tokens
     except Exception as e:
         print(f"Error with OpenAI Chat model: {e}")
-        return f"Error: {e}"
+        return f"Error: {e}", 0
 
 def ask_gemini(prompt, json_mode=False):
     """
-    Sends a prompt to the Google Gemini API (1.5 Flash) and returns the text response.
+    Sends a prompt to the Google Gemini API.
+    Returns a tuple: (text_response, tokens_used)
     """
     if not GEMINI_API_KEY:
-        return "Configuration Error: GEMINI_API_KEY is not set."
+        return "Configuration Error: GEMINI_API_KEY is not set.", 0
 
     model_instance = genai.GenerativeModel('gemini-1.5-flash-latest')
-    generation_config = genai.types.GenerationConfig(
-        response_mime_type="application/json"
-    ) if json_mode else None
+    generation_config = genai.types.GenerationConfig(response_mime_type="application/json") if json_mode else None
 
     try:
         print("Sending request to Gemini model: gemini-1.5-flash-latest...")
         response = model_instance.generate_content(prompt, generation_config=generation_config)
         content = response.text
+        tokens = response.usage_metadata.total_token_count if response.usage_metadata else 0
         print("Received response from Gemini model.")
-        return content
+        return content, tokens
     except Exception as e:
         print(f"Error with Gemini model: {e}")
-        return f"Error communicating with AI model: {e}"
+        return f"Error communicating with AI model: {e}", 0

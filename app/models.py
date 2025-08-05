@@ -11,6 +11,8 @@ class User(UserMixin, db.Model):
     preferred_lesson_length = db.Column(db.Integer, nullable=False, default=15)
     language = db.Column(db.String(10), nullable=False, default='english')
 
+    tokens_used = db.Column(db.Integer, nullable=False, default=0)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
