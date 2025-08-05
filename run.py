@@ -1,5 +1,4 @@
 from app.configuration import app, db
-from app.models import User, Course, Lesson
 
 if __name__ == '__main__':
     with app.app_context():
