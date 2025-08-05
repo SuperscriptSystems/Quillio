@@ -37,6 +37,19 @@ class Lesson(db.Model):
     is_completed = db.Column(db.Boolean, default=False, nullable=False)
     course = db.relationship('Course', backref=db.backref('lessons', lazy=True, cascade="all, delete-orphan"))
 
+class UnitTestResult(db.Model):
+    __tablename__ = 'unit_test_results'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    unit_title = db.Column(db.String, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('unit_test_results', lazy=True, cascade="all, delete-orphan"))
+    course = db.relationship('Course', backref=db.backref('unit_test_results', lazy=True, cascade="all, delete-orphan"))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'course_id', 'unit_title', name='_user_course_unit_uc'),)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))

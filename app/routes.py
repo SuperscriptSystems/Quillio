@@ -2,7 +2,7 @@ from flask import render_template, request, session, redirect, url_for, jsonify,
 from flask_login import login_user, logout_user, login_required, current_user
 import time
 from app.configuration import app, db
-from app.models import User, Course, Lesson
+from app.models import User, Course, Lesson, UnitTestResult
 from app.services import (
     generate_test_service,
     evaluate_answers_service,
@@ -12,6 +12,7 @@ from app.services import (
     generate_lesson_content_service,
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
+
 
 # --- Authentication and Main Navigation Routes ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -83,9 +84,18 @@ def show_course(course_id):
     if course.user_id != current_user.id:
         flash("You do not have permission to view this course.", "danger")
         return redirect(url_for('course_dashboard'))
+
     lessons = Lesson.query.filter_by(course_id=course.id).all()
     lessons_dict = {lesson.lesson_title: lesson for lesson in lessons}
-    return render_template('course.html', course=course.course_data, course_id=course.id, all_lessons=lessons_dict)
+
+    results = UnitTestResult.query.filter_by(user_id=current_user.id, course_id=course_id).all()
+    scores_dict = {result.unit_title: result.score for result in results}
+
+    return render_template('course.html',
+                           course=course.course_data,
+                           course_id=course.id,
+                           all_lessons=lessons_dict,
+                           scores=scores_dict)
 
 @app.route('/course/<int:course_id>/archive', methods=['POST'])
 @login_required
@@ -260,6 +270,7 @@ def get_unit_test_data(course_id, unit_title, test_title):
     session['current_unit_test_index'] = 0
     session['current_unit_test_answers'] = []
     session['current_course_id'] = course_id
+    session['current_unit_title'] = unit_title # This line is crucial
     session.modified = True
     return jsonify({'redirect_url': url_for('unit_test')})
 
@@ -299,20 +310,45 @@ def get_unit_results_data():
 
     test_info = load_test_from_dict(session['current_unit_test'])
     user_answers = session['current_unit_test_answers']
+    course_id = session.get('current_course_id')
+    unit_title = session.get('current_unit_title')
 
-    detailed_results = evaluate_answers_service(test_info.questions, user_answers, False, current_user.language)
+    # This is the corrected function call
+    detailed_results = evaluate_answers_service(test_info.questions, user_answers, current_user.language)
+
     time.sleep(1)
     final_score = calculate_percentage_score_service(detailed_results)
+
+    # Save or Update the score in the database
+    if course_id and unit_title:
+        existing_result = UnitTestResult.query.filter_by(
+            user_id=current_user.id,
+            course_id=course_id,
+            unit_title=unit_title
+        ).first()
+
+        if existing_result:
+            existing_result.score = final_score
+        else:
+            new_result = UnitTestResult(
+                user_id=current_user.id,
+                course_id=course_id,
+                unit_title=unit_title,
+                score=final_score
+            )
+            db.session.add(new_result)
+        db.session.commit()
 
     session['unit_test_final_results'] = {
         'answers': detailed_results,
         'final_score': final_score,
         'test_name': test_info.test_name,
-        'course_id': session.get('current_course_id')
+        'course_id': course_id
     }
 
     # Clean up session
-    for key in ['current_unit_test', 'current_unit_test_index', 'current_unit_test_answers', 'current_course_id']:
+    for key in ['current_unit_test', 'current_unit_test_index', 'current_unit_test_answers', 'current_course_id',
+                'current_unit_title']:
         session.pop(key, None)
 
     return jsonify({'redirect_url': url_for('show_unit_test_results')})

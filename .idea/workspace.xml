@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Deleted useless files and made it use different ai models for different tasks.">
+    <list default="true" id="db90e5ba-3069-4a5d-8d27-851ce0406aa3" name="Changes" comment="Made next up text at the end of lesson a link">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/course.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/course.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -229,7 +231,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754338234501</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Made next up text at the end of lesson a link">
+      <option name="closed" value="true" />
+      <created>1754344086236</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1754344086236</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -244,6 +254,7 @@
     <MESSAGE value="Changed models to openai" />
     <MESSAGE value="Deleted useless files" />
     <MESSAGE value="Deleted useless files and made it use different ai models for different tasks." />
-    <option name="LAST_COMMIT_MESSAGE" value="Deleted useless files and made it use different ai models for different tasks." />
+    <MESSAGE value="Made next up text at the end of lesson a link" />
+    <option name="LAST_COMMIT_MESSAGE" value="Made next up text at the end of lesson a link" />
   </component>
 </project>

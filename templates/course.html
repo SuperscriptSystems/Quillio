@@ -16,6 +16,8 @@
     .unit { margin-bottom: 30px; }
     a { text-decoration: none; color: #5cb85c; font-weight: bold; }
     a:hover { text-decoration: underline; }
+    .test-container { display: flex; align-items: center; justify-content: space-between; }
+    .test-score { color: #5cb85c; font-weight: bold; font-size: 1.1em; }
 </style>
 
 <div class="container">
@@ -36,7 +38,14 @@
                 {% endfor %}
             </ul>
             <h3>📝 {% if lang == 'russian' %}Тест{% else %}Test{% endif %}</h3>
-            <p><a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit.unit_title, test_title=unit.test.test_title) }}">{{ unit.test.test_title }}</a></p>
+
+            <div class="test-container">
+                <a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit.unit_title, test_title=unit.test.test_title) }}">{{ unit.test.test_title }}</a>
+                <!-- This block checks for the score and displays it -->
+                {% if unit.unit_title in scores %}
+                    <span class="test-score">{{ scores[unit.unit_title] }}%</span>
+                {% endif %}
+            </div>
         </div>
     {% endfor %}
 </div>
