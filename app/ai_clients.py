@@ -52,7 +52,7 @@ def ask_gemini(prompt, json_mode=False):
     if not GEMINI_API_KEY:
         return "Configuration Error: GEMINI_API_KEY is not set.", 0
 
-    model_instance = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model_instance = genai.GenerativeModel("gemini-1.5-flash-latest")
     generation_config = genai.types.GenerationConfig(response_mime_type="application/json") if json_mode else None
 
     try:
