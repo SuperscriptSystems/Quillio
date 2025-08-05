@@ -165,4 +165,4 @@ def _generate_next_up_link(lesson, user):
             return f"\n\n<hr>\n\n### 👉 {next_up_header}: [{link_text}]({url})"
     except Exception as e:
         print(f"Error generating 'Next up' link: {e}")
-    return ""
+    return ''
