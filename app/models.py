@@ -27,7 +27,7 @@ class Course(db.Model):
     course_data = db.Column(JSONB, nullable=False)
     status = db.Column(db.String(50), nullable=False, default='active')
     completed_lessons = db.Column(db.Integer, nullable=False, default=0)
-    user = db.relationship('User', backref=db.backref('courses', lazy=True, cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('courses', lazy=True, cascade='all, delete-orphan'))
 
 class Lesson(db.Model):
     __tablename__ = 'lessons'
