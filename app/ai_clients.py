@@ -60,7 +60,7 @@ def ask_gemini(prompt, json_mode=False):
         response = model_instance.generate_content(prompt, generation_config=generation_config)
         content = response.text
         tokens = response.usage_metadata.total_token_count if response.usage_metadata else 0
-        print("Received response from Gemini model.")
+        print('Received response from Gemini model.')
         return content, tokens
     except Exception as e:
         print(f"Error with Gemini model: {e}")
