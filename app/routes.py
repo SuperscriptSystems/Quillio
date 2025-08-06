@@ -1,3 +1,4 @@
+import datetime
 from flask import render_template, request, session, redirect, url_for, jsonify, flash
 from flask_login import login_user, logout_user, login_required, current_user
 import time
@@ -85,9 +86,12 @@ def show_course(course_id):
         flash("You do not have permission to view this course.", "danger")
         return redirect(url_for('course_dashboard'))
 
+    # Check for course completion
     lessons = Lesson.query.filter_by(course_id=course.id).all()
-    lessons_dict = {lesson.lesson_title: lesson for lesson in lessons}
+    total_lessons = len(lessons)
+    is_course_complete = (total_lessons > 0 and course.completed_lessons == total_lessons)
 
+    lessons_dict = {lesson.lesson_title: lesson for lesson in lessons}
     results = UnitTestResult.query.filter_by(user_id=current_user.id, course_id=course_id).all()
     scores_dict = {result.unit_title: result.score for result in results}
 
@@ -95,7 +99,9 @@ def show_course(course_id):
                            course=course.course_data,
                            course_id=course.id,
                            all_lessons=lessons_dict,
-                           scores=scores_dict)
+                           scores=scores_dict,
+                           is_course_complete=is_course_complete)
+
 
 @app.route('/course/<int:course_id>/archive', methods=['POST'])
 @login_required
@@ -114,6 +120,30 @@ def show_lesson(lesson_id):
     if not lesson or not lesson.html_content or lesson.course.user_id != current_user.id:
         return redirect(url_for('course_dashboard'))
     return render_template('lesson_page.html', title=lesson.lesson_title, content=lesson.html_content, course_id=lesson.course_id)
+
+@app.route('/course/<int:course_id>/certificate')
+@login_required
+def show_certificate(course_id):
+    course = Course.query.get_or_404(course_id)
+
+    # Security check: User must own the course
+    if course.user_id != current_user.id:
+        flash("You do not have permission to view this certificate.", "danger")
+        return redirect(url_for('course_dashboard'))
+
+    # Completion check: Verify all lessons are completed
+    total_lessons = Lesson.query.filter_by(course_id=course.id).count()
+    if not (total_lessons > 0 and course.completed_lessons == total_lessons):
+        flash("You must complete all lessons in this course to view the certificate.", "warning")
+        return redirect(url_for('show_course', course_id=course_id))
+
+    # Prepare data for the certificate
+    completion_date = datetime.date.today().strftime("%B %d, %Y")
+
+    return render_template('certificate.html',
+                           user_name=current_user.username,
+                           course_title=course.course_title,
+                           completion_date=completion_date)
 
 
 # --- Initial Assessment Routes ---

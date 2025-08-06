@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Completion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .certificate-container {
+            width: 800px;
+            padding: 50px;
+            border: 10px solid #2A3F4A;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .title {
+            font-family: 'Playfair Display', serif;
+            font-size: 50px;
+            color: #2A3F4A;
+            margin-bottom: 30px;
+        }
+        .subtitle {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .name {
+            font-family: 'Playfair Display', serif;
+            font-size: 40px;
+            color: #5cb85c;
+            margin: 20px 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        .course-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .date {
+            font-size: 18px;
+            margin-top: 30px;
+        }
+        .print-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .print-button:hover {
+            background: #4a9a4a;
+        }
+
+        /* Hide the button when printing */
+        @media print {
+            body { background: #fff; }
+            .print-button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <h1 class="title">Certificate of Completion</h1>
+        <p class="subtitle">This is to certify that</p>
+        <div class="name">{{ user_name }}</div>
+        <p class="subtitle">has successfully completed the course</p>
+        <div class="course-title">"{{ course_title }}"</div>
+        <p class="date">Awarded on: {{ completion_date }}</p>
+    </div>
+
+    <button class="print-button" onclick="window.print()">🖨️ Print Certificate</button>
+</body>
+</html>

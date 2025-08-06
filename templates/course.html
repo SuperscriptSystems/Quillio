@@ -18,10 +18,32 @@
     a:hover { text-decoration: underline; }
     .test-container { display: flex; align-items: center; justify-content: space-between; }
     .test-score { color: #5cb85c; font-weight: bold; font-size: 1.1em; }
+    .certificate-btn {
+        display: inline-block;
+        background: #f0ad4e;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        margin-bottom: 20px;
+        transition: background-color 0.3s;
+    }
+    .certificate-btn:hover {
+        background: #d4963c;
+        text-decoration: none;
+    }
 </style>
 
 <div class="container">
     <h1>{{ course.course_title }}</h1>
+
+    {% if is_course_complete %}
+        <a href="{{ url_for('show_certificate', course_id=course_id) }}" class="certificate-btn">
+            🏆 {% if lang == 'russian' %}Посмотреть сертификат{% else %}View Certificate{% endif %}
+        </a>
+    {% endif %}
+
     {% for unit in course.units %}
         <div class="unit">
             <h2>{{ unit.unit_title }}</h2>
@@ -41,11 +63,11 @@
 
             <div class="test-container">
                 <a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit.unit_title, test_title=unit.test.test_title) }}">{{ unit.test.test_title }}</a>
-                <!-- This block checks for the score and displays it -->
                 {% if unit.unit_title in scores %}
                     <span class="test-score">{{ scores[unit.unit_title] }}%</span>
                 {% endif %}
             </div>
+
         </div>
     {% endfor %}
 </div>
