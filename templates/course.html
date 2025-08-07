@@ -5,7 +5,7 @@
 {% block content %}
 {% set lang = current_user.language %}
 <style>
-    .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
     h1, h2 { color: #F0F0F0; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; }
     h3 { color: #E0E0E0; }
     ul { list-style-type: none; padding-left: 0; }
@@ -18,28 +18,28 @@
     a:hover { text-decoration: underline; }
     .test-container { display: flex; align-items: center; justify-content: space-between; }
     .test-score { color: #5cb85c; font-weight: bold; font-size: 1.1em; }
-    .certificate-btn {
-        display: inline-block;
-        background: #f0ad4e;
-        color: #fff;
-        padding: 10px 20px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: bold;
-        margin-bottom: 20px;
-        transition: background-color 0.3s;
-    }
-    .certificate-btn:hover {
-        background: #d4963c;
-        text-decoration: none;
-    }
+    .certificate-btn { display: inline-block; background: #f0ad4e; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 20px; transition: background-color 0.3s; }
+    .certificate-btn:hover { background: #d4963c; text-decoration: none; }
+
+    #edit-course-btn { position: absolute; top: 25px; right: 25px; background: #5bc0de; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    #edit-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+    #edit-modal { background: #344955; padding: 20px; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+    #edit-modal h2 { margin-top: 0; }
+    .edit-instructions { font-size: 0.9em; color: #ccc; margin-bottom: 15px; }
+    #edit-input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-size: 15px; }
+    #edit-thinking { display: none; text-align: center; color: #f0ad4e; padding: 15px; font-weight: bold; }
+    .modal-actions { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-actions button { padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+    #save-edit-btn { background: #5cb85c; color: white; }
+    #close-modal-btn { background: #d9534f; color: white; }
 </style>
 
 <div class="container">
+    <button id="edit-course-btn" title="Edit Course with AI">✏️</button>
     <h1>{{ course.course_title }}</h1>
 
     {% if is_course_complete %}
-        <a href="{{ url_for('show_certificate', course_id=course_id) }}" class="certificate-btn">
+        <a href="{{ url_for('show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
             🏆 {% if lang == 'russian' %}Посмотреть сертификат{% else %}View Certificate{% endif %}
         </a>
     {% endif %}
@@ -62,7 +62,7 @@
             <h3>📝 {% if lang == 'russian' %}Тест{% else %}Test{% endif %}</h3>
 
             <div class="test-container">
-                <a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit.unit_title, test_title=unit.test.test_title) }}">{{ unit.test.test_title }}</a>
+                <a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit['unit_title'], test_title=unit['test']['test_title']) }}">{{ unit['test']['test_title'] }}</a>
                 {% if unit.unit_title in scores %}
                     <span class="test-score">{{ scores[unit.unit_title] }}%</span>
                 {% endif %}
@@ -71,4 +71,75 @@
         </div>
     {% endfor %}
 </div>
+
+<div id="edit-modal-overlay">
+    <div id="edit-modal">
+        <h2>AI Course Editor</h2>
+        <p class="edit-instructions">
+            {% if lang == 'russian' %}Попросите ИИ добавить или удалить уроки. Например: "Добавь урок о последствиях войны" или "Удали урок о вводных понятиях".{% else %}Ask the AI to add or remove lessons. E.g., "Add a lesson about the post-war consequences" or "Remove the lesson about basic concepts".{% endif %}
+        </p>
+        <form id="edit-form">
+            <textarea id="edit-input" rows="3" placeholder="{% if lang == 'russian' %}Ваш запрос...{% else %}Your request...{% endif %}" required></textarea>
+            <div id="edit-thinking">{% if lang == 'russian' %}Думаю...{% else %}Thinking...{% endif %}</div>
+            <div class="modal-actions">
+                <button type="button" id="close-modal-btn">{% if lang == 'russian' %}Закрыть{% else %}Close{% endif %}</button>
+                <button type="submit" id="save-edit-btn">{% if lang == 'russian' %}Обновить курс{% else %}Update Course{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtn = document.getElementById('edit-course-btn');
+    const modalOverlay = document.getElementById('edit-modal-overlay');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const editForm = document.getElementById('edit-form');
+    const editInput = document.getElementById('edit-input');
+    const thinkingIndicator = document.getElementById('edit-thinking');
+    const saveBtn = document.getElementById('save-edit-btn');
+
+    editBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'flex';
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'none';
+    });
+
+    editForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const userRequest = editInput.value.trim();
+        if (!userRequest) return;
+
+        thinkingIndicator.style.display = 'block';
+        saveBtn.disabled = true;
+
+        fetch("{{ url_for('edit_course', course_id=course_id) }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request: userRequest })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('{% if lang == "russian" %}Курс успешно обновлен! Страница сейчас перезагрузится.{% else %}Course updated successfully! The page will now reload.{% endif %}');
+                window.location.reload();
+            } else {
+                alert('{% if lang == "russian" %}Ошибка: {% else %}Error: {% endif %}' + data.error);
+                thinkingIndicator.style.display = 'none';
+                saveBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Edit course error:', error);
+            alert('{% if lang == "russian" %}Произошла непредвиденная ошибка.{% else %}An unexpected error occurred.{% endif %}');
+            thinkingIndicator.style.display = 'none';
+            saveBtn.disabled = false;
+        });
+    });
+});
+</script>
 {% endblock %}

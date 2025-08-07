@@ -11,6 +11,8 @@ from app.services import (
     calculate_percentage_score_service,
     create_course_service,
     generate_lesson_content_service,
+    get_tutor_response_service,
+    edit_course_service,
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
 
@@ -96,8 +98,9 @@ def show_course(course_id):
     scores_dict = {result.unit_title: result.score for result in results}
 
     return render_template('course.html',
+                           course_obj=course,
                            course=course.course_data,
-                           course_id=course.id,
+                           course_id=course_id,
                            all_lessons=lessons_dict,
                            scores=scores_dict,
                            is_course_complete=is_course_complete)
@@ -119,7 +122,11 @@ def show_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson or not lesson.html_content or lesson.course.user_id != current_user.id:
         return redirect(url_for('course_dashboard'))
-    return render_template('lesson_page.html', title=lesson.lesson_title, content=lesson.html_content, course_id=lesson.course_id)
+    return render_template('lesson_page.html',
+                           title=lesson.lesson_title,
+                           content=lesson.html_content,
+                           course_id=lesson.course_id,
+                           lesson_id=lesson.id)
 
 @app.route('/course/<int:course_id>/certificate')
 @login_required
@@ -401,3 +408,43 @@ def show_unit_test_results():
         test_name=results['test_name'],
         course_id=results['course_id']
     )
+
+@app.route('/chat_with_tutor', methods=['POST'])
+@login_required
+def chat_with_tutor():
+    data = request.get_json()
+    lesson_id = data.get('lesson_id')
+    user_question = data.get('message')
+    chat_history = data.get('history', [])
+
+    if not lesson_id or not user_question:
+        return jsonify({"error": "Missing data"}), 400
+
+    lesson = db.session.get(Lesson, lesson_id)
+    if not lesson or lesson.course.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    ai_response = get_tutor_response_service(lesson, chat_history, user_question, current_user)
+
+    return jsonify({'response': ai_response})
+
+
+@app.route('/course/<int:course_id>/edit', methods=['POST'])
+@login_required
+def edit_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.user_id != current_user.id:
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    user_request = data.get('request')
+
+    if not user_request:
+        return jsonify({"success": False, "error": "No request provided."}), 400
+
+    updated_course, error = edit_course_service(course, user_request, current_user.language)
+
+    if error:
+        return jsonify({"success": False, "error": error}), 500
+
+    return jsonify({"success": True})

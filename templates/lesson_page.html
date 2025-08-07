@@ -12,7 +12,6 @@
             margin: 0;
             padding: 40px 20px;
         }
-
         .container {
             background: #344955;
             border-radius: 12px;
@@ -21,71 +20,236 @@
             margin: auto;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
+        .content h1 { color: #F0F0F0; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; }
+        .content { white-space: pre-wrap; }
+        .content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; }
+        .content code { background-color: #2A3F4A; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 6px; }
+        .content pre { background-color: #2A3F4A; padding: 1em; border-radius: 8px; overflow: auto; }
+        .content pre code { padding: 0; background-color: transparent; }
+        a.back-button { display: inline-block; margin-top: 30px; text-decoration: none; background: #5cb85c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; transition: background-color 0.3s ease; }
+        a.back-button:hover { background: #4a9a4a; }
 
-        /* Styling for headings generated from markdown content */
-        .content h1 {
+        /* --- NEW CHAT WIDGET STYLES --- */
+        #chat-icon {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #5cb85c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: transform 0.2s ease-in-out;
+        }
+        #chat-icon:hover {
+            transform: scale(1.1);
+        }
+        #chat-widget {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            max-width: 90vw;
+            height: 500px;
+            background: #344955;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 999;
+            flex-direction: column;
+        }
+        .chat-header {
+            background: #4a5e6a;
             color: #F0F0F0;
-            border-bottom: 2px solid #4a5e6a;
-            padding-bottom: 10px;
-        }
-
-        .content {
-            white-space: pre-wrap;
-        }
-
-        .content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .content code {
-            background-color: #2A3F4A;
-            padding: 0.2em 0.4em;
-            margin: 0;
-            font-size: 85%;
-            border-radius: 6px;
-        }
-
-        .content pre {
-            background-color: #2A3F4A;
-            padding: 1em;
-            border-radius: 8px;
-            overflow: auto;
-        }
-
-        .content pre code {
-            padding: 0;
-            background-color: transparent;
-        }
-
-        a.back-button {
-            display: inline-block;
-            margin-top: 30px;
-            text-decoration: none;
-            background: #5cb85c;
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 15px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
             font-weight: bold;
-            transition: background-color 0.3s ease;
         }
-
-        a.back-button:hover {
-            background: #4a9a4a;
+        .chat-log {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+        .user-message {
+            background-color: #5cb85c;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-message {
+            background-color: #2A3F4A;
+            color: #F0F0F0;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-form {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #4a5e6a;
+        }
+        #chat-input {
+            flex-grow: 1;
+            border: none;
+            background: #2A3F4A;
+            color: #F0F0F0;
+            padding: 10px;
+            border-radius: 20px;
+        }
+        #chat-input:focus {
+            outline: none;
+        }
+        .chat-form button {
+            background: none;
+            border: none;
+            color: #5cb85c;
+            font-size: 24px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .loading-dots {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .loading-dots div {
+            width: 8px;
+            height: 8px;
+            background-color: #ccc;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dots .dot1 { animation-delay: -0.32s; }
+        .loading-dots .dot2 { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- The 'content' variable contains the AI-generated lesson, which includes its own title -->
-        <div class="content">
+        <div class="content" id="lesson-content" data-lesson-id="{{ lesson_id }}">
             {{ content|safe }}
         </div>
-
-        <!-- The 'course_id' is passed to create the correct link back -->
         <a href="{{ url_for('show_course', course_id=course_id) }}" class="back-button">{% if current_user.language == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
     </div>
+
+    <!-- NEW: Chat Widget HTML -->
+    <div id="chat-icon">💬</div>
+    <div id="chat-widget">
+        <div class="chat-header">
+            {% if current_user.language == 'russian' %}Чат с учителем{% else %}Chat with Your Tutor{% endif %}
+        </div>
+        <div class="chat-log" id="chat-log">
+             <div class="chat-message ai-message">{% if current_user.language == 'russian' %}Привет! Задайте мне любой вопрос по этому уроку.{% else %}Hi there! Ask me anything about this lesson.{% endif %}</div>
+        </div>
+        <form class="chat-form" id="chat-form">
+            <input type="text" id="chat-input" placeholder="{% if current_user.language == 'russian' %}Спросите что-нибудь...{% else %}Ask something...{% endif %}" autocomplete="off">
+            <button type="submit">➤</button>
+        </form>
+    </div>
+
+ <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const chatIcon = document.getElementById('chat-icon');
+        const chatWidget = document.getElementById('chat-widget');
+        const chatLog = document.getElementById('chat-log');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const lessonContentDiv = document.getElementById('lesson-content');
+        const lessonId = lessonContentDiv.dataset.lessonId;
+
+        // CORRECTED: Use lowercase 'ai' for the initial role
+        const chatHistory = [{ role: 'ai', content: chatLog.children[0].textContent }];
+
+        chatIcon.addEventListener('click', () => {
+            const isDisplayed = chatWidget.style.display === 'flex';
+            chatWidget.style.display = isDisplayed ? 'none' : 'flex';
+        });
+
+        chatForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+
+            appendMessage(userMessage, 'user-message');
+            // CORRECTED: Use lowercase 'user' for the role
+            chatHistory.push({ role: 'user', content: userMessage });
+            chatInput.value = '';
+
+            showLoadingIndicator();
+
+            fetch("{{ url_for('chat_with_tutor') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lesson_id: parseInt(lessonId), // Ensure lesson_id is an integer
+                    message: userMessage,
+                    history: chatHistory
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // This will catch the 400 error and show it in the console
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                removeLoadingIndicator();
+                const aiResponse = data.response;
+                appendMessage(aiResponse, 'ai-message');
+                // CORRECTED: Use lowercase 'ai' for the role
+                chatHistory.push({ role: 'ai', content: aiResponse });
+            })
+            .catch(error => {
+                removeLoadingIndicator();
+                appendMessage('Sorry, an error occurred. Please check the console for details.', 'ai-message');
+                console.error('Chat error:', error);
+            });
+        });
+
+        function appendMessage(text, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', className);
+            messageDiv.textContent = text;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function showLoadingIndicator() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.classList.add('chat-message', 'ai-message');
+            loadingDiv.innerHTML = `<div class="loading-dots"><div class="dot1"></div><div class="dot2"></div><div class="dot3"></div></div>`;
+            chatLog.appendChild(loadingDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function removeLoadingIndicator() {
+            const indicator = document.getElementById('loading-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+    });
+</script>
 </body>
 </html>

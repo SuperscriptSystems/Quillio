@@ -5,7 +5,7 @@ import markdown
 from flask import url_for
 from flask_login import current_user
 from app.ai_clients import ask_openai, ask_gemini
-from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder
+from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, ChatPromptBuilder, CourseEditorPromptBuilder
 from models.json_extractor import JsonExtractor
 from models.fulltest import Test
 from models.question import Question
@@ -166,3 +166,77 @@ def _generate_next_up_link(lesson, user):
     except Exception as e:
         print(f"Error generating 'Next up' link: {e}")
     return ''
+
+
+def get_tutor_response_service(lesson, chat_history, user_question, user):
+    """Gets a contextual response from the AI tutor."""
+    lesson_prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length)
+
+    tutor_prompt = ChatPromptBuilder.build_tutor_prompt(
+        lesson_content=lesson_prompt,
+        unit_title=lesson.unit_title,
+        chat_history=chat_history,
+        user_question=user_question,
+        language=user.language
+    )
+
+    response_text, tokens = ask_gemini(tutor_prompt, json_mode=False)
+    _update_token_count(tokens)
+
+    return response_text if "Error:" not in response_text else "I'm sorry, I'm having trouble connecting right now."
+
+
+def edit_course_service(course, user_request, language):
+    """Uses an AI to edit the course structure and syncs the database."""
+    prompt = CourseEditorPromptBuilder.build_edit_prompt(course.course_data, user_request, language)
+
+    new_course_str, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
+    _update_token_count(tokens)
+
+    if not new_course_str or "Error:" in new_course_str:
+        return None, "AI failed to generate a new course structure."
+
+    try:
+        new_course_json = JsonExtractor.extract_json(new_course_str)
+        if 'course_title' not in new_course_json or 'units' not in new_course_json:
+            raise ValueError("Invalid JSON structure returned by AI.")
+    except Exception as e:
+        print(f"Error parsing new course structure: {e}")
+        return None, "AI returned an invalid course format."
+
+    # --- Sync Database with new structure ---
+    # 1. Update the main course data
+    course.course_data = new_course_json
+
+    # 2. Get a set of all lesson titles from the new JSON
+    new_lesson_titles = set()
+    for unit in new_course_json.get('units', []):
+        for lesson_data in unit.get('lessons', []):
+            new_lesson_titles.add(lesson_data.get('lesson_title'))
+
+    # 3. Get all existing Lesson objects for this course
+    existing_lessons = Lesson.query.filter_by(course_id=course.id).all()
+    existing_lesson_titles = {lesson.lesson_title: lesson for lesson in existing_lessons}
+
+    # 4. Delete lessons that are no longer in the new structure
+    for title, lesson_obj in existing_lesson_titles.items():
+        if title not in new_lesson_titles:
+            db.session.delete(lesson_obj)
+
+    # 5. Add lessons that are new
+    for unit in new_course_json.get('units', []):
+        for lesson_data in unit.get('lessons', []):
+            title = lesson_data.get('lesson_title')
+            if title and title not in existing_lesson_titles:
+                new_lesson = Lesson(
+                    course_id=course.id,
+                    unit_title=unit.get('unit_title'),
+                    lesson_title=title
+                )
+                db.session.add(new_lesson)
+
+    # Recalculate completed lessons count
+    course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
+    db.session.commit()
+
+    return new_course_json, None

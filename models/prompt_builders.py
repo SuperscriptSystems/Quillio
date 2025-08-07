@@ -1,3 +1,6 @@
+import json
+
+
 class TestPromptBuilder:
     @staticmethod
     def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5):
@@ -192,4 +195,60 @@ class LessonPromptBuilder:
             IMPORTANT: Do NOT include any text in the images themselves, as the AI image generator struggles with rendering text in images. I want the images to be a grayscale, schematic diagram.
 
             The lesson should be clear, logically organized, and visually supported where appropriate.
+        """
+
+class ChatPromptBuilder:
+    @staticmethod
+    def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
+        # Format the chat history for the prompt
+        history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
+
+        return f"""
+            You are a friendly and encouraging AI tutor named Arcane.
+            Your goal is to help a student understand a specific lesson.
+            You must only answer questions related to the lesson's topic. If asked about something unrelated, politely steer the conversation back to the lesson.
+            Keep your answers concise and easy to understand.
+            Your entire response MUST be in the following language: {language}.
+
+            CONTEXT:
+            - The student is studying the unit: "{unit_title}"
+            - The student is viewing a lesson with the following content:
+            --- LESSON START ---
+            {lesson_content}
+            --- LESSON END ---
+
+            - Here is the conversation so far:
+            --- CHAT HISTORY START ---
+            {history_string}
+            --- CHAT HISTORY END ---
+
+            Now, answer the student's latest question (no markdown please).
+            Student's Question: "{user_question}"
+        """
+
+
+class CourseEditorPromptBuilder:
+    @staticmethod
+    def build_edit_prompt(current_course_json, user_request, language="english"):
+        # Convert the current course data to a pretty-printed JSON string for the prompt
+        course_str = json.dumps(current_course_json, indent=2)
+
+        return f"""
+            You are an expert AI curriculum editor. Your task is to modify a course structure, which is provided as a JSON object.
+            The user will give you a command in plain text. You must interpret this command and apply it to the JSON structure.
+
+            IMPORTANT RULES:
+            1. Your entire response MUST be only the new, complete, and valid JSON object for the entire course.
+            2. Do NOT add any extra text, explanations, or markdown formatting around the JSON.
+            3. The structure of the JSON (keys like "course_title", "units", "lessons", "test") must be preserved.
+            4. If you add new lessons, ensure they have an "estimated_time_minutes" key.
+            5. All user-visible strings in the JSON (titles) must be in the following language: {language}.
+
+            Here is the current course structure:
+            {course_str}
+
+            Here is the user's request:
+            "{user_request}"
+
+            Now, return the complete, modified JSON object reflecting the user's request.
         """
