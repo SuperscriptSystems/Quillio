@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{% block title %}Arcane{% endblock %}</title>
+    <title>{% block title %}Quillio{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -103,7 +103,7 @@
     {% if current_user.is_authenticated %}
     <nav class="top-nav">
         <div class="logo">
-            <a href="{{ url_for('course_dashboard') }}">🧠 Arcane</a>
+            <a href="{{ url_for('course_dashboard') }}">🧠 Quillio</a>
         </div>
         <div class="nav-links">
             <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.username }}{% else %}Welcome, {{ current_user.username }}{% endif %}</span>

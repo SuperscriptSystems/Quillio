@@ -1,7 +1,7 @@
-import datetime
 from flask import render_template, request, session, redirect, url_for, jsonify, flash
 from flask_login import login_user, logout_user, login_required, current_user
 import time
+import datetime
 from app.configuration import app, db
 from app.models import User, Course, Lesson, UnitTestResult
 from app.services import (
@@ -16,7 +16,6 @@ from app.services import (
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
 
-
 # --- Authentication and Main Navigation Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -30,6 +29,7 @@ def login():
         else:
             flash('Invalid username or password. Please try again.', 'danger')
     return render_template('login.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -48,6 +48,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -56,16 +57,19 @@ def logout():
     flash('You have been successfully logged out.', 'info')
     return redirect(url_for('login'))
 
-@app.route('/')
+
+@app.route('/create')
 @login_required
 def home():
     return render_template('index.html')
+
 
 @app.route('/course_dashboard')
 @login_required
 def course_dashboard():
     active_courses = Course.query.filter_by(user_id=current_user.id, status='active').order_by(Course.id.desc()).all()
     return render_template('course_dashboard.html', courses=active_courses)
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -88,7 +92,6 @@ def show_course(course_id):
         flash("You do not have permission to view this course.", "danger")
         return redirect(url_for('course_dashboard'))
 
-    # Check for course completion
     lessons = Lesson.query.filter_by(course_id=course.id).all()
     total_lessons = len(lessons)
     is_course_complete = (total_lessons > 0 and course.completed_lessons == total_lessons)
@@ -116,35 +119,36 @@ def archive_course(course_id):
         flash(f"'{course.course_title}' has been archived.", "info")
     return redirect(url_for('course_dashboard'))
 
+
 @app.route('/lesson/<int:lesson_id>')
 @login_required
 def show_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson or not lesson.html_content or lesson.course.user_id != current_user.id:
+        flash("Lesson not found or not yet generated.", "warning")
         return redirect(url_for('course_dashboard'))
+
     return render_template('lesson_page.html',
                            title=lesson.lesson_title,
                            content=lesson.html_content,
                            course_id=lesson.course_id,
                            lesson_id=lesson.id)
 
+
 @app.route('/course/<int:course_id>/certificate')
 @login_required
 def show_certificate(course_id):
     course = Course.query.get_or_404(course_id)
 
-    # Security check: User must own the course
     if course.user_id != current_user.id:
         flash("You do not have permission to view this certificate.", "danger")
         return redirect(url_for('course_dashboard'))
 
-    # Completion check: Verify all lessons are completed
     total_lessons = Lesson.query.filter_by(course_id=course.id).count()
     if not (total_lessons > 0 and course.completed_lessons == total_lessons):
         flash("You must complete all lessons in this course to view the certificate.", "warning")
         return redirect(url_for('show_course', course_id=course_id))
 
-    # Prepare data for the certificate
     completion_date = datetime.date.today().strftime("%B %d, %Y")
 
     return render_template('certificate.html',
@@ -157,20 +161,21 @@ def show_certificate(course_id):
 @app.route('/assessment', methods=['GET', 'POST'])
 @login_required
 def assessment():
-    # POST request handles both starting a new test and submitting an answer
     if request.method == 'POST':
-        if 'test' in session: # This means a test is in progress
+        if 'test' in session:
             test = load_test_from_dict(session['test'])
-            session['answers'].append({'question': test.questions[session['index']].question, 'answer': request.form.get('answer')})
+            session['answers'].append(
+                {'question': test.questions[session['index']].question, 'answer': request.form.get('answer')})
             session['index'] += 1
             if session['index'] < len(test.questions):
-                return redirect(url_for('assessment')) # Next question
+                return redirect(url_for('assessment'))
             else:
-                return redirect(url_for('loading', context='results')) # Test finished
-        else: # Start a new test
+                return redirect(url_for('loading', context='results'))
+        else:
             topic = request.form.get('topic')
             knowledge = request.form.get('knowledge')
-            test = generate_test_service(topic, "multiple_choice", f"User claims to be {knowledge}/100", current_user.language)
+            test = generate_test_service(topic, "multiple_choice", f"User claims to be {knowledge}/100",
+                                         current_user.language)
             if not test:
                 flash("There was an error generating the test. Please try again.", "danger")
                 return redirect(url_for('home'))
@@ -179,19 +184,22 @@ def assessment():
             session['index'] = 0
             return redirect(url_for('test_ready'))
 
-    # GET request displays the current question
     if 'test' not in session or session['index'] >= len(session['test']['questions']):
         return redirect(url_for('home'))
     test = load_test_from_dict(session['test'])
     question = test.questions[session['index']]
     input_html = render_answer_input(question)
-    return render_template('question_page.html', test_page=question, input_html=input_html, current=session['index'] + 1, total=len(test.questions), form_action=url_for('assessment'), lang=current_user.language)
+    return render_template('question_page.html', test_page=question, input_html=input_html,
+                           current=session['index'] + 1, total=len(test.questions), form_action=url_for('assessment'),
+                           lang=current_user.language)
+
 
 @app.route('/test_ready')
 @login_required
 def test_ready():
     if 'test' not in session: return redirect(url_for('home'))
     return render_template('test_ready.html', lang=current_user.language)
+
 
 @app.route('/results')
 @login_required
@@ -226,29 +234,37 @@ def loading(context):
 @login_required
 def get_results_data():
     test = load_test_from_dict(session['test'])
-
     detailed_results = evaluate_answers_service(test.questions, session['answers'], current_user.language)
 
-    time.sleep(1)  # Delay can remain if you want
+    if not detailed_results:
+        flash("There was an error evaluating your test answers. Please try again.", "danger")
+        for key in ['test', 'answers', 'index']: session.pop(key, None)
+        return jsonify({'redirect_url': url_for('home')})
+
     knowledge_assessment = generate_knowledge_assessment_service(detailed_results)
-    time.sleep(1)  # Another delay
+
+    if "Error:" in knowledge_assessment or "Unauthorized" in knowledge_assessment:
+        flash(
+            "Your test was graded, but we could not generate a course. The API key is invalid or your account has billing issues. Please check your credentials.",
+            "danger")
+        session['assessed_answers'] = detailed_results
+        session['knowledge_assessment'] = "Could not be generated due to an API authentication error."
+        for key in ['test', 'answers', 'index', 'current_course_id']: session.pop(key, None)
+        return jsonify({'redirect_url': url_for('show_results')})
+
     new_course = create_course_service(current_user, test.topic, knowledge_assessment, detailed_results)
 
-    # Gracefully handle API failures for course creation
     if not new_course:
-        flash(
-            "We're sorry, but we couldn't create your course at this time due to a high volume of requests to our AI service. Please try again in a few moments.",
-            "danger")
+        flash("We're sorry, but we couldn't create your course at this time. Please try again later.", "danger")
         return jsonify({'redirect_url': url_for('home')})
 
     session['assessed_answers'] = detailed_results
     session['knowledge_assessment'] = knowledge_assessment
     session['current_course_id'] = new_course.id
-    session.pop('test', None)
-    session.pop('answers', None)
-    session.pop('index', None)
+    for key in ['test', 'answers', 'index']: session.pop(key, None)
 
     return jsonify({'redirect_url': url_for('show_results')})
+
 
 @app.route('/loading/lesson/<int:lesson_id>')
 @login_required
@@ -260,6 +276,7 @@ def loading_lesson(lesson_id):
     msg = f"Загружаем {lesson.lesson_title}..." if lang == 'russian' else f"Loading {lesson.lesson_title}..."
     fetch_url = url_for('get_lesson_data', lesson_id=lesson.id)
     return render_template('loading.html', message=msg, fetch_url=fetch_url, lang=lang)
+
 
 @app.route('/get_lesson_data/<int:lesson_id>')
 @login_required
@@ -279,7 +296,7 @@ def get_lesson_data(lesson_id):
     return jsonify({'redirect_url': url_for('show_lesson', lesson_id=lesson.id)})
 
 
-
+# --- Unit Test Routes ---
 @app.route('/loading/unit_test/<int:course_id>/<unit_title>/<test_title>')
 @login_required
 def loading_unit_test(course_id, unit_title, test_title):
@@ -307,7 +324,7 @@ def get_unit_test_data(course_id, unit_title, test_title):
     session['current_unit_test_index'] = 0
     session['current_unit_test_answers'] = []
     session['current_course_id'] = course_id
-    session['current_unit_title'] = unit_title # This line is crucial
+    session['current_unit_title'] = unit_title
     session.modified = True
     return jsonify({'redirect_url': url_for('unit_test')})
 
@@ -336,7 +353,8 @@ def unit_test():
 
     page = test.questions[test_index]
     input_html = render_answer_input(page)
-    return render_template('question_page.html', test_page=page, input_html=input_html, current=test_index + 1, total=len(test.questions), form_action=url_for('unit_test'), lang=current_user.language)
+    return render_template('question_page.html', test_page=page, input_html=input_html, current=test_index + 1,
+                           total=len(test.questions), form_action=url_for('unit_test'), lang=current_user.language)
 
 
 @app.route('/get_unit_results_data')
@@ -350,13 +368,10 @@ def get_unit_results_data():
     course_id = session.get('current_course_id')
     unit_title = session.get('current_unit_title')
 
-    # This is the corrected function call
     detailed_results = evaluate_answers_service(test_info.questions, user_answers, current_user.language)
-
     time.sleep(1)
     final_score = calculate_percentage_score_service(detailed_results)
 
-    # Save or Update the score in the database
     if course_id and unit_title:
         existing_result = UnitTestResult.query.filter_by(
             user_id=current_user.id,
@@ -383,7 +398,6 @@ def get_unit_results_data():
         'course_id': course_id
     }
 
-    # Clean up session
     for key in ['current_unit_test', 'current_unit_test_index', 'current_unit_test_answers', 'current_course_id',
                 'current_unit_title']:
         session.pop(key, None)
@@ -409,6 +423,8 @@ def show_unit_test_results():
         course_id=results['course_id']
     )
 
+
+# --- Chat and AI Editing Routes ---
 @app.route('/chat_with_tutor', methods=['POST'])
 @login_required
 def chat_with_tutor():
