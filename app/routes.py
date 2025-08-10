@@ -1,4 +1,4 @@
-from flask import render_template, request, session, redirect, url_for, jsonify, flash
+from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context
 from flask_login import login_user, logout_user, login_required, current_user
 import time
 import datetime
@@ -434,15 +434,23 @@ def chat_with_tutor():
     chat_history = data.get('history', [])
 
     if not lesson_id or not user_question:
-        return jsonify({"error": "Missing data"}), 400
+        return Response("Missing data", status=400)
 
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson or lesson.course.user_id != current_user.id:
-        return jsonify({"error": "Unauthorized"}), 403
+        return Response("Unauthorized", status=403)
 
-    ai_response = get_tutor_response_service(lesson, chat_history, user_question, current_user)
+    ai_response_generator = get_tutor_response_service(lesson, chat_history, user_question, current_user)
 
-    return jsonify({'response': ai_response})
+    def generate():
+        try:
+            for chunk in ai_response_generator:
+                yield chunk
+        except Exception as e:
+            print(f"Error during stream generation: {e}")
+            yield "I'm sorry, I encountered a technical issue. Please try again."
+
+    return Response(stream_with_context(generate()), mimetype='text/plain')
 
 
 @app.route('/course/<int:course_id>/edit', methods=['POST'])

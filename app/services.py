@@ -4,8 +4,9 @@ import time
 import markdown
 from flask import url_for
 from flask_login import current_user
-from app.ai_clients import ask_openai, ask_gemini
-from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, ChatPromptBuilder, CourseEditorPromptBuilder
+from app.ai_clients import ask_openai, ask_gemini, ask_gemini_stream
+from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, \
+    ChatPromptBuilder, CourseEditorPromptBuilder
 from models.json_extractor import JsonExtractor
 from models.fulltest import Test
 from models.question import Question
@@ -169,8 +170,9 @@ def _generate_next_up_link(lesson, user):
 
 
 def get_tutor_response_service(lesson, chat_history, user_question, user):
-    """Gets a contextual response from the AI tutor."""
-    lesson_prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length)
+    """Gets a contextual response from the AI tutor by streaming."""
+    lesson_prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title,
+                                                                    user.language, user.preferred_lesson_length)
 
     tutor_prompt = ChatPromptBuilder.build_tutor_prompt(
         lesson_content=lesson_prompt,
@@ -180,10 +182,8 @@ def get_tutor_response_service(lesson, chat_history, user_question, user):
         language=user.language
     )
 
-    response_text, tokens = ask_gemini(tutor_prompt, json_mode=False)
-    _update_token_count(tokens)
-
-    return response_text if "Error:" not in response_text else "I'm sorry, I'm having trouble connecting right now."
+    # Returns a generator that yields response chunks
+    return ask_gemini_stream(tutor_prompt)
 
 
 def edit_course_service(course, user_request, language):

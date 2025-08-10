@@ -29,7 +29,6 @@
         a.back-button { display: inline-block; margin-top: 30px; text-decoration: none; background: #5cb85c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; transition: background-color 0.3s ease; }
         a.back-button:hover { background: #4a9a4a; }
 
-        /* --- NEW CHAT WIDGET STYLES --- */
         #chat-icon {
             position: fixed;
             bottom: 30px;
@@ -86,6 +85,7 @@
             border-radius: 18px;
             max-width: 80%;
             line-height: 1.4;
+            white-space: pre-wrap; /* Ensure streamed text wraps correctly */
         }
         .user-message {
             background-color: #5cb85c;
@@ -123,24 +123,6 @@
             margin-left: 10px;
             cursor: pointer;
         }
-        .loading-dots {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .loading-dots div {
-            width: 8px;
-            height: 8px;
-            background-color: #ccc;
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .loading-dots .dot1 { animation-delay: -0.32s; }
-        .loading-dots .dot2 { animation-delay: -0.16s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1.0); }
-        }
     </style>
 </head>
 <body>
@@ -176,7 +158,6 @@
         const lessonContentDiv = document.getElementById('lesson-content');
         const lessonId = lessonContentDiv.dataset.lessonId;
 
-        // CORRECTED: Use lowercase 'ai' for the initial role
         const chatHistory = [{ role: 'ai', content: chatLog.children[0].textContent }];
 
         chatIcon.addEventListener('click', () => {
@@ -184,46 +165,59 @@
             chatWidget.style.display = isDisplayed ? 'none' : 'flex';
         });
 
-        chatForm.addEventListener('submit', function (event) {
+        chatForm.addEventListener('submit', async function (event) {
             event.preventDefault();
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
 
             appendMessage(userMessage, 'user-message');
-            // CORRECTED: Use lowercase 'user' for the role
             chatHistory.push({ role: 'user', content: userMessage });
             chatInput.value = '';
 
-            showLoadingIndicator();
+            // Create an empty div for the AI's response to be streamed into.
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.classList.add('chat-message', 'ai-message');
+            chatLog.appendChild(aiMessageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
 
-            fetch("{{ url_for('chat_with_tutor') }}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lesson_id: parseInt(lessonId), // Ensure lesson_id is an integer
-                    message: userMessage,
-                    history: chatHistory
-                })
-            })
-            .then(response => {
+            let fullResponse = ""; // To store the complete response for chat history
+
+            try {
+                const response = await fetch("{{ url_for('chat_with_tutor') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lesson_id: parseInt(lessonId),
+                        message: userMessage,
+                        history: chatHistory
+                    })
+                });
+
                 if (!response.ok) {
-                    // This will catch the 400 error and show it in the console
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.json();
-            })
-            .then(data => {
-                removeLoadingIndicator();
-                const aiResponse = data.response;
-                appendMessage(aiResponse, 'ai-message');
-                // CORRECTED: Use lowercase 'ai' for the role
-                chatHistory.push({ role: 'ai', content: aiResponse });
-            })
-            .catch(error => {
-                removeLoadingIndicator();
-                appendMessage('Sorry, an error occurred. Please check the console for details.', 'ai-message');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                // Read from the stream
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    fullResponse += chunk;
+                    aiMessageDiv.textContent += chunk; // Append text chunk to the message div
+                    chatLog.scrollTop = chatLog.scrollHeight; // Keep chat scrolled to the bottom
+                }
+
+                // Add the complete AI response to the history after the stream is finished
+                chatHistory.push({ role: 'ai', content: fullResponse });
+
+            } catch (error) {
+                aiMessageDiv.textContent = 'Sorry, an error occurred. Please try again.';
                 console.error('Chat error:', error);
-            });
+            }
         });
 
         function appendMessage(text, className) {
@@ -232,22 +226,6 @@
             messageDiv.textContent = text;
             chatLog.appendChild(messageDiv);
             chatLog.scrollTop = chatLog.scrollHeight;
-        }
-
-        function showLoadingIndicator() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loading-indicator';
-            loadingDiv.classList.add('chat-message', 'ai-message');
-            loadingDiv.innerHTML = `<div class="loading-dots"><div class="dot1"></div><div class="dot2"></div><div class="dot3"></div></div>`;
-            chatLog.appendChild(loadingDiv);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-
-        function removeLoadingIndicator() {
-            const indicator = document.getElementById('loading-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
         }
     });
 </script>

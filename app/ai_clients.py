@@ -65,3 +65,24 @@ def ask_gemini(prompt, json_mode=False):
     except Exception as e:
         print(f"Error with Gemini model: {e}")
         return f"Error communicating with AI model: {e}", 0
+
+def ask_gemini_stream(prompt):
+    """
+    Sends a prompt to the Google Gemini API and streams the response.
+    Yields text chunks as they are generated.
+    """
+    if not GEMINI_API_KEY:
+        yield "Configuration Error: GEMINI_API_KEY is not set."
+        return
+
+    model_instance = genai.GenerativeModel("gemini-1.5-flash-latest")
+    try:
+        print("Sending streaming request to Gemini model: gemini-1.5-flash-latest...")
+        response_stream = model_instance.generate_content(prompt, stream=True)
+        for chunk in response_stream:
+            if chunk.text:
+                yield chunk.text
+        print('Finished streaming response from Gemini model.')
+    except Exception as e:
+        print(f"Error with Gemini streaming model: {e}")
+        yield f"Error communicating with AI model: {e}"
