@@ -10,7 +10,7 @@ import os
 # --- App Initialization and Configuration ---
 app = Flask(__name__, template_folder='../templates')
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = 'postgresql://postgres:postgres@localhost:5432/quillio_db'
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('CONNECTION_STRING')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
