@@ -48,9 +48,9 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
-@app.route('/', methods=['GET'])
+@app.route('/health', methods=['GET'])
 def healthcheck():
-    return "OK"
+    return "OK", 200
 @app.route('/logout')
 @login_required
 def logout():
