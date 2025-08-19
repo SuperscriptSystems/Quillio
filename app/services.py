@@ -21,9 +21,10 @@ def _update_token_count(tokens_to_add):
 
 
 # --- Test and Assessment Services (Using Gemini) ---
-def generate_test_service(topic, format_type, additional_context, language):
+def generate_test_service(topic, format_type, additional_context, language, user_profile=None):
     """Generates a test using the Gemini model and updates token count."""
-    prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_context, language)
+    prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_context, language,
+                                                            user_profile=user_profile)
     raw_output, tokens = ask_gemini(prompt, json_mode=True)
     _update_token_count(tokens)
 
@@ -88,7 +89,7 @@ def create_course_service(user, topic, knowledge_assessment, assessed_answers):
     prompt = CoursePromptBuilder.build_course_structure_prompt(topic, knowledge_assessment, assessed_answers,
                                                                user.language, user.preferred_lesson_length)
     raw_course, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
-    if tokens > 0:  # Here we use the passed 'user' object directly
+    if tokens > 0:
         user.tokens_used += tokens
         db.session.commit()
 
@@ -115,8 +116,9 @@ def generate_lesson_content_service(lesson, user):
     Generates lesson content by streaming, saves the final result to the DB,
     and returns a generator that yields the content chunks.
     """
+    user_profile = {'age': user.age, 'bio': user.bio}
     prompt = LessonPromptBuilder.build_lesson_content_prompt(
-        lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length
+        lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length, user_profile=user_profile
     )
 
     def content_generator():

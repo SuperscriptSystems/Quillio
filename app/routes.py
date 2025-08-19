@@ -83,6 +83,12 @@ def settings():
     if request.method == 'POST':
         current_user.preferred_lesson_length = int(request.form.get('lesson_length'))
         current_user.language = request.form.get('language')
+
+        # Handle optional age and bio fields
+        age = request.form.get('age')
+        current_user.age = int(age) if age else None
+        current_user.bio = request.form.get('bio')
+
         db.session.commit()
         flash('Your settings have been updated!', 'success')
         return redirect(url_for('settings'))
@@ -180,8 +186,12 @@ def assessment():
         else:
             topic = request.form.get('topic')
             knowledge = request.form.get('knowledge')
-            test = generate_test_service(topic, "multiple_choice", f"User claims to be {knowledge}/100",
-                                         current_user.language)
+
+            additional_context = f"User claims to be {knowledge}/100 in their knowledge of the topic."
+            user_profile = {'age': current_user.age, 'bio': current_user.bio}
+
+            test = generate_test_service(topic, "multiple_choice", additional_context,
+                                         current_user.language, user_profile=user_profile)
             if not test:
                 flash("There was an error generating the test. Please try again.", "danger")
                 return redirect(url_for('home'))

@@ -3,10 +3,20 @@ import json
 
 class TestPromptBuilder:
     @staticmethod
-    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5):
+    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5, user_profile=None):
+        user_context_string = ""
+        if user_profile:
+            if user_profile.get('age'):
+                user_context_string += f" The user is {user_profile.get('age')} years old."
+            if user_profile.get('bio'):
+                user_context_string += f" The user's bio: '{user_profile.get('bio')}'."
+            if user_context_string:
+                 user_context_string = f"Consider the following user profile when creating questions:{user_context_string}"
+
         return f"""
             You are assessing a person's skill level in this topic: {topic}.
             {additional_context}
+            {user_context_string}
 
             Create {number_of_questions} multiple choice questions.
             Your entire response MUST be a valid JSON object.
@@ -170,7 +180,17 @@ class CoursePromptBuilder:
 
 class LessonPromptBuilder:
     @staticmethod
-    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15):
+    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None):
+        user_context_string = ""
+        if user_profile:
+            profile_details = []
+            if user_profile.get('age'):
+                profile_details.append(f"Age: {user_profile.get('age')}")
+            if user_profile.get('bio'):
+                profile_details.append(f"Bio: '{user_profile.get('bio')}'")
+            if profile_details:
+                user_context_string = f"- Personalize the tone, examples, and analogies for the user. User profile: {'; '.join(profile_details)}. For instance, if their bio mentions programming, use technical analogies."
+
         return f"""
             You are an expert AI tutor.
 
@@ -183,6 +203,7 @@ class LessonPromptBuilder:
             - Include step-by-step explanations, illustrative examples, and analogies.
             - The lesson's length MUST be calibrated for a {lesson_duration}-minute completion time for an average student. A shorter duration means a more concise, high-level overview. A longer duration allows for more depth, detail, and examples.
             - Use concise, easy-to-understand language for learners at various levels.
+            {user_context_string}
 
             Visual Aids:
             - Insert AI image placeholders only when the visual would enhance understanding.
@@ -200,7 +221,6 @@ class LessonPromptBuilder:
 class ChatPromptBuilder:
     @staticmethod
     def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
-        # Format the chat history for the prompt
         history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
 
         return f"""
@@ -230,7 +250,6 @@ class ChatPromptBuilder:
 class CourseEditorPromptBuilder:
     @staticmethod
     def build_edit_prompt(current_course_json, user_request, language="english"):
-        # Convert the current course data to a pretty-printed JSON string for the prompt
         course_str = json.dumps(current_course_json, indent=2)
 
         return f"""
