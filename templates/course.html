@@ -1,3 +1,4 @@
+--- START OF FILE course.html ---
 {% extends "base.html" %}
 
 {% block title %}{{ course.course_title }}{% endblock %}
@@ -125,7 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('{% if lang == "russian" %}Курс успешно обновлен! Страница сейчас перезагрузится.{% else %}Course updated successfully! The page will now reload.{% endif %}');
                 window.location.reload();
             } else {
                 alert('{% if lang == "russian" %}Ошибка: {% else %}Error: {% endif %}' + data.error);
