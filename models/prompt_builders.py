@@ -3,7 +3,7 @@ import json
 
 class TestPromptBuilder:
     @staticmethod
-    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5, user_profile=None):
+    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5, user_profile=None, lesson_content_context=""):
         user_context_string = ""
         if user_profile:
             if user_profile.get('age'):
@@ -13,10 +13,20 @@ class TestPromptBuilder:
             if user_context_string:
                  user_context_string = f"Consider the following user profile when creating questions:{user_context_string}"
 
+        lesson_context_string = ""
+        if lesson_content_context:
+            lesson_context_string = f"""
+            IMPORTANT: The following is the content of the lessons from this unit. You MUST base your questions directly on this material.
+            --- LESSON CONTENT START ---
+            {lesson_content_context}
+            --- LESSON CONTENT END ---
+            """
+
         return f"""
-            You are assessing a person's skill level in this topic: {topic}.
+            You are creating a test on the topic: {topic}.
             {additional_context}
             {user_context_string}
+            {lesson_context_string}
 
             Create {number_of_questions} multiple choice questions.
             Your entire response MUST be a valid JSON object.
@@ -132,11 +142,22 @@ class AnswerPromptBuilder:
 
 class CoursePromptBuilder:
     @staticmethod
-    def build_course_structure_prompt(topic, knowledge_assessment, assessed_answers, language="english", lesson_duration=15):
+    def build_course_structure_prompt(topic, knowledge_assessment, assessed_answers, language="english", lesson_duration=15, user_profile=None):
         assessed_answers_string = "\n".join([
             f"Q: {item['question']}\nA: {item['answer']}\nAssessment: {item['assessment']}\n"
             for item in assessed_answers
         ])
+
+        user_context_string = ""
+        if user_profile:
+            profile_details = []
+            if user_profile.get('age'):
+                profile_details.append(f"Age: {user_profile.get('age')}")
+            if user_profile.get('bio'):
+                profile_details.append(f"Bio: '{user_profile.get('bio')}'")
+            if profile_details:
+                user_context_string = f"- Personalize the course for the following user profile: {'; '.join(profile_details)}."
+
 
         return f"""
             A learner has completed a test on the topic: "{topic}".
@@ -148,6 +169,7 @@ class CoursePromptBuilder:
 
             Your task:
             - Based on their performance and the overall assessment, design a personalized course outline to help them improve.
+            {user_context_string}
             - The course should include units. Each unit should contain lessons (with estimated completion time in minutes) and a test.
             - Do NOT generate lesson or test content yet—only the structure.
             - Lessons should be appropriately sequenced for progressive learning.
@@ -180,7 +202,7 @@ class CoursePromptBuilder:
 
 class LessonPromptBuilder:
     @staticmethod
-    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None):
+    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None, course_structure=None):
         user_context_string = ""
         if user_profile:
             profile_details = []
@@ -191,12 +213,22 @@ class LessonPromptBuilder:
             if profile_details:
                 user_context_string = f"- Personalize the tone, examples, and analogies for the user. User profile: {'; '.join(profile_details)}. For instance, if their bio mentions programming, use technical analogies."
 
+        course_context_string = ""
+        if course_structure:
+            course_context_string = f"""
+            For context, here is the full structure of the course this lesson is a part of. This can help you reference other lessons if needed.
+            --- COURSE STRUCTURE START ---
+            {json.dumps(course_structure, indent=2)}
+            --- COURSE STRUCTURE END ---
+            """
+
         return f"""
             You are an expert AI tutor.
 
             Generate a comprehensive, structured, and beginner-friendly lesson on the topic: "{lesson_title}".
             This lesson is part of the unit: "{unit_title}".
             The entire lesson content MUST be in {language}.
+            {course_context_string}
 
             Guidelines:
             - Use clear Markdown formatting (## Headings, bullet points, code blocks if needed).
@@ -221,28 +253,29 @@ class LessonPromptBuilder:
 class ChatPromptBuilder:
     @staticmethod
     def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
+        # Format the chat history for the prompt
         history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
 
         return f"""
             You are a friendly and encouraging AI tutor named Quillio.
-            Your goal is to help a student understand a specific lesson.
+            Your goal is to help a student understand a specific lesson. You have perfect knowledge of the lesson content provided below.
             You must only answer questions related to the lesson's topic. If asked about something unrelated, politely steer the conversation back to the lesson.
             Keep your answers concise and easy to understand.
             Your entire response MUST be in the following language: {language}.
 
             CONTEXT:
             - The student is studying the unit: "{unit_title}"
-            - The student is viewing a lesson with the following content:
-            --- LESSON START ---
+            - The student is viewing a lesson with the following content (this is the ground truth):
+            --- LESSON CONTENT START ---
             {lesson_content}
-            --- LESSON END ---
+            --- LESSON CONTENT END ---
 
             - Here is the conversation so far:
             --- CHAT HISTORY START ---
             {history_string}
             --- CHAT HISTORY END ---
 
-            Now, answer the student's latest question (no markdown please).
+            Now, answer the student's latest question based on the provided lesson content (no markdown please).
             Student's Question: "{user_question}"
         """
 
@@ -250,6 +283,7 @@ class ChatPromptBuilder:
 class CourseEditorPromptBuilder:
     @staticmethod
     def build_edit_prompt(current_course_json, user_request, language="english"):
+        # Convert the current course data to a pretty-printed JSON string for the prompt
         course_str = json.dumps(current_course_json, indent=2)
 
         return f"""
