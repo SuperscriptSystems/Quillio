@@ -44,6 +44,47 @@ def ask_openai(prompt, model="gpt-4o-mini", json_mode=False):
         print(f"Error with OpenAI Chat model: {e}")
         return f"Error: {e}", 0
 
+def ask_openai_stream(prompt, model="gpt-4o"):
+    """
+    Sends a prompt to the OpenAI Chat API and streams the response.
+    Yields text chunks as they are generated.
+    """
+    if not OPENAI_API_KEY:
+        yield "Configuration Error: API_KEY_OPENAI is not set."
+        return
+
+    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {OPENAI_API_KEY}'}
+    data = {
+        'model': model,
+        'messages': [{'role': 'user', 'content': prompt}],
+        'stream': True
+    }
+
+    try:
+        print(f"Sending streaming request to OpenAI model: {model}...")
+        with requests.post(OPENAI_API_URL, headers=headers, json=data, stream=True) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if line and line.startswith(b'data:'):
+                    try:
+                        line_data = line[len(b'data:'):].strip()
+                        if line_data == b'[DONE]':
+                            break
+                        json_data = json.loads(line_data)
+                        if 'choices' in json_data and len(json_data['choices']) > 0:
+                            delta = json_data['choices'][0].get('delta', {})
+                            content_chunk = delta.get('content')
+                            if content_chunk:
+                                yield content_chunk
+                    except json.JSONDecodeError:
+                        print(f"Could not decode JSON from line: {line}")
+                        continue
+        print('Finished streaming response from OpenAI model.')
+    except Exception as e:
+        print(f"Error with OpenAI streaming model: {e}")
+        yield f"Error communicating with AI model: {e}"
+
+
 def ask_gemini(prompt, json_mode=False):
     """
     Sends a prompt to the Google Gemini API.

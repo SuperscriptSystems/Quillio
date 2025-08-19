@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generating: {{ lesson.lesson_title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #2A3F4A;
+            color: #F0F0F0;
+            line-height: 1.7;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            background: #344955;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            margin: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .content h1 { color: #F0F0F0; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; }
+        .content img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; }
+        .content code { background-color: #2A3F4A; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 6px; }
+        .content pre { background-color: #2A3F4A; padding: 1em; border-radius: 8px; overflow: auto; }
+        .content pre code { padding: 0; background-color: transparent; }
+        #spinner {
+            margin: 25px auto;
+            width: 30px;
+            height: 30px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #5cb85c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .generating-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #cccccc;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="generating-header">
+            <div id="spinner"></div>
+            <p>Generating your lesson, please wait...</p>
+        </div>
+        <div class="content" id="lesson-content">
+            <!-- Content will be streamed here -->
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+    const contentDiv = document.getElementById('lesson-content');
+    const spinner = document.getElementById('spinner');
+    const streamUrl = "{{ url_for('stream_lesson_data', lesson_id=lesson.id) }}";
+
+    try {
+        const response = await fetch(streamUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+
+        // Hide spinner once the stream starts
+        spinner.parentElement.style.display = 'none';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                // Stream finished, redirect to the final formatted page
+                window.location.href = "{{ url_for('show_lesson', lesson_id=lesson.id) }}";
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            fullContent += chunk;
+            // Render the received markdown into the div
+            contentDiv.innerHTML = marked.parse(fullContent);
+        }
+
+    } catch (error) {
+        console.error('Streaming error:', error);
+        contentDiv.innerHTML = '<p style="color: #d9534f;">Sorry, an error occurred while generating the lesson. Please try again later.</p>';
+        spinner.style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
