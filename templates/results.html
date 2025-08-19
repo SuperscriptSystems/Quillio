@@ -40,6 +40,9 @@ a:hover { background: #4a9a_ia; }
         <div class="assessment-summary">
             {{ knowledge_assessment | safe }}
         </div>
+        {% if course_id %}
+            <a href="{{ url_for('show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
+        {% endif %}
         {% for item in answers %}
             <p><strong>{% if lang == 'russian' %}В:{% else %}Q:{% endif %}</strong> {{ item.question }}<br>
                <strong>{% if lang == 'russian' %}📝 Ваш ответ:{% else %}📝 Your Answer:{% endif %}</strong> {{ item.answer }}<br>
