@@ -23,7 +23,7 @@
         margin-bottom: 8px;
         font-weight: bold;
     }
-    input[type="number"], select {
+    input[type="number"], select, textarea {
         width: 100%;
         box-sizing: border-box;
         padding: 12px;
@@ -33,6 +33,7 @@
         background: #2A3F4A;
         color: #F0F0F0;
         margin-bottom: 20px;
+        font-family: 'Roboto', sans-serif;
     }
     button {
         width: 100%;
@@ -60,6 +61,12 @@
             <option value="english" {% if current_user.language == 'english' %}selected{% endif %}>English</option>
             <option value="russian" {% if current_user.language == 'russian' %}selected{% endif %}>Русский (Russian)</option>
         </select>
+
+        <label for="age">{% if lang == 'russian' %}Ваш возраст (необязательно){% else %}Your Age (Optional){% endif %}</label>
+        <input type="number" id="age" name="age" value="{{ current_user.age or '' }}" min="1">
+
+        <label for="bio">{% if lang == 'russian' %}Краткая биография (необязательно){% else %}Short Bio (Optional){% endif %}</label>
+        <textarea id="bio" name="bio" rows="3" placeholder="{% if lang == 'russian' %}Расскажите немного о себе...{% else %}Tell us a little about yourself...{% endif %}">{{ current_user.bio or '' }}</textarea>
 
         <button type="submit">{% if lang == 'russian' %}Сохранить настройки{% else %}Save Settings{% endif %}</button>
     </form>

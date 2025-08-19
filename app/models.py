@@ -1,4 +1,4 @@
-from app.configuration import db, login_manager  # Import your db and login_manager
+from app.configuration import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSONB
@@ -10,6 +10,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     preferred_lesson_length = db.Column(db.Integer, nullable=False, default=15)
     language = db.Column(db.String(10), nullable=False, default='english')
+
+    age = db.Column(db.Integer, nullable=True)
+    bio = db.Column(db.Text, nullable=True)
 
     tokens_used = db.Column(db.Integer, nullable=False, default=0)
 
