@@ -3,7 +3,6 @@ from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
-import tempfile
 import math
 import os
 
@@ -14,7 +13,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('CONNECTION_STRING')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_FILE_DIR"] = tempfile.mkdtemp()
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
