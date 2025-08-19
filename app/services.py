@@ -21,10 +21,12 @@ def _update_token_count(tokens_to_add):
 
 
 # --- Test and Assessment Services (Using Gemini) ---
-def generate_test_service(topic, format_type, additional_context, language, user_profile=None):
+def generate_test_service(topic, format_type, additional_context, language, user_profile=None,
+                          lesson_content_context=""):
     """Generates a test using the Gemini model and updates token count."""
     prompt = TestPromptBuilder.build_multiple_choice_prompt(topic, additional_context, language,
-                                                            user_profile=user_profile)
+                                                            user_profile=user_profile,
+                                                            lesson_content_context=lesson_content_context)
     raw_output, tokens = ask_gemini(prompt, json_mode=True)
     _update_token_count(tokens)
 
@@ -86,8 +88,10 @@ def generate_knowledge_assessment_service(detailed_results):
 
 def create_course_service(user, topic, knowledge_assessment, assessed_answers):
     """Creates a course structure using OpenAI and updates token count."""
+    user_profile = {'age': user.age, 'bio': user.bio}
     prompt = CoursePromptBuilder.build_course_structure_prompt(topic, knowledge_assessment, assessed_answers,
-                                                               user.language, user.preferred_lesson_length)
+                                                               user.language, user.preferred_lesson_length,
+                                                               user_profile=user_profile)
     raw_course, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
     if tokens > 0:
         user.tokens_used += tokens
@@ -117,11 +121,15 @@ def generate_lesson_content_service(lesson, user):
     and returns a generator that yields the content chunks.
     """
     user_profile = {'age': user.age, 'bio': user.bio}
+    course_structure = lesson.course.course_data
+
     prompt = LessonPromptBuilder.build_lesson_content_prompt(
-        lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length, user_profile=user_profile
+        lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length, user_profile=user_profile,
+        course_structure=course_structure
     )
 
     def content_generator():
+        # Using ask_openai_stream now
         response_stream = ask_openai_stream(prompt, model="gpt-4o")
 
         full_markdown_chunks = []
@@ -192,11 +200,10 @@ def _generate_next_up_link(lesson, user):
 
 def get_tutor_response_service(lesson, chat_history, user_question, user):
     """Gets a contextual response from the AI tutor by streaming."""
-    lesson_prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title,
-                                                                    user.language, user.preferred_lesson_length)
+    lesson_content = lesson.html_content if lesson.html_content else "Lesson content has not been generated yet."
 
     tutor_prompt = ChatPromptBuilder.build_tutor_prompt(
-        lesson_content=lesson_prompt,
+        lesson_content=lesson_content,
         unit_title=lesson.unit_title,
         chat_history=chat_history,
         user_question=user_question,

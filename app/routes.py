@@ -336,8 +336,20 @@ def get_unit_test_data(course_id, unit_title, test_title):
     if course.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
 
+    # Gather all lesson content for this unit to provide context for the test
+    lessons_in_unit = Lesson.query.filter_by(course_id=course_id, unit_title=unit_title).all()
+    lesson_content_context = "\n\n".join([lesson.html_content for lesson in lessons_in_unit if lesson.html_content])
+
     topic = f"{unit_title}: {test_title}"
-    test = generate_test_service(topic, "multiple_choice", "Create 5-10 questions.", current_user.language)
+    user_profile = {'age': current_user.age, 'bio': current_user.bio}
+
+    test = generate_test_service(topic, "multiple_choice", "Create 5-10 questions.", current_user.language,
+                                 user_profile=user_profile, lesson_content_context=lesson_content_context)
+    if not test:
+        flash(f"Could not generate the test for {unit_title}. There may have been an issue with the AI service.",
+              "danger")
+        return jsonify({'redirect_url': url_for('show_course', course_id=course_id)})
+
     session['current_unit_test'] = save_test_to_dict(test)
     session['current_unit_test_index'] = 0
     session['current_unit_test_answers'] = []
