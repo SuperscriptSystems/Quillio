@@ -163,6 +163,10 @@
         chatIcon.addEventListener('click', () => {
             const isDisplayed = chatWidget.style.display === 'flex';
             chatWidget.style.display = isDisplayed ? 'none' : 'flex';
+            if (!isDisplayed) {
+                // Focus the input field when the widget becomes visible
+                setTimeout(() => chatInput.focus(), 0);
+            }
         });
 
         chatForm.addEventListener('submit', async function (event) {
