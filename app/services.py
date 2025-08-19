@@ -4,7 +4,7 @@ import time
 import markdown
 from flask import url_for
 from flask_login import current_user
-from app.ai_clients import ask_openai, ask_gemini, ask_gemini_stream
+from app.ai_clients import ask_openai, ask_gemini, ask_gemini_stream, ask_openai_stream
 from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, \
     ChatPromptBuilder, CourseEditorPromptBuilder
 from models.json_extractor import JsonExtractor
@@ -111,26 +111,45 @@ def create_course_service(user, topic, knowledge_assessment, assessed_answers):
 
 
 def generate_lesson_content_service(lesson, user):
-    """Generates lesson content using OpenAI and updates token count."""
-    if lesson.html_content:
-        return
+    """
+    Generates lesson content by streaming, saves the final result to the DB,
+    and returns a generator that yields the content chunks.
+    """
+    prompt = LessonPromptBuilder.build_lesson_content_prompt(
+        lesson.lesson_title, lesson.unit_title, user.language, user.preferred_lesson_length
+    )
 
-    prompt = LessonPromptBuilder.build_lesson_content_prompt(lesson.lesson_title, lesson.unit_title, user.language,
-                                                             user.preferred_lesson_length)
-    markdown_text, tokens = ask_openai(prompt, model="gpt-4o", json_mode=False)
-    if tokens > 0:  # Here we use the passed 'user' object directly
-        user.tokens_used += tokens
+    def content_generator():
+        response_stream = ask_openai_stream(prompt, model="gpt-4o")
+
+        full_markdown_chunks = []
+        for chunk in response_stream:
+            yield chunk  # Yield each piece of content to the client immediately
+            full_markdown_chunks.append(chunk)
+
+        # After the stream is complete, process and save the full content
+        print("Stream finished. Processing and saving full lesson content...")
+        full_markdown_text = "".join(full_markdown_chunks)
+
+        if "Error:" in full_markdown_text:
+            lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"
+        else:
+            next_up_link_md = _generate_next_up_link(lesson, user)
+            final_markdown_text = full_markdown_text + next_up_link_md
+            processed_text = re.sub(r'\[IMAGE_PROMPT:\s*"(.*?)"\]', r'<i>[Image Prompt: "\1"]</i>', final_markdown_text)
+            lesson.html_content = markdown.markdown(processed_text, extensions=["fenced_code", "tables"])
+
+        # Update lesson and course completion status
+        if not lesson.is_completed:
+            lesson.is_completed = True
+            course = lesson.course
+            # Recalculate completed lessons count
+            course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
+
         db.session.commit()
+        print(f"Lesson {lesson.id} saved to database.")
 
-    if not markdown_text or "Error:" in markdown_text:
-        lesson.html_content = "<p>Error generating lesson content. Please try again later.</p>"
-    else:
-        next_up_link_md = _generate_next_up_link(lesson, user)
-        final_markdown_text = markdown_text + next_up_link_md
-        processed_text = re.sub(r'\[IMAGE_PROMPT:\s*"(.*?)"\]', r'<i>[Image Prompt: "\1"]</i>', final_markdown_text)
-        lesson.html_content = markdown.markdown(processed_text, extensions=["fenced_code", "tables"])
-
-    db.session.commit()
+    return content_generator()
 
 
 def _generate_next_up_link(lesson, user):

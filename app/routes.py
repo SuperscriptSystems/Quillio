@@ -16,6 +16,7 @@ from app.services import (
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
 
+
 # --- Authentication and Main Navigation Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,9 +49,12 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+
 @app.route('/health', methods=['GET'])
 def healthcheck():
     return "OK", 200
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -274,28 +278,30 @@ def loading_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson or lesson.course.user_id != current_user.id:
         return redirect(url_for('course_dashboard'))
-    lang = current_user.language
-    msg = f"Загружаем {lesson.lesson_title}..." if lang == 'russian' else f"Loading {lesson.lesson_title}..."
-    fetch_url = url_for('get_lesson_data', lesson_id=lesson.id)
-    return render_template('loading.html', message=msg, fetch_url=fetch_url, lang=lang)
+
+    # If content already exists, just show it. Also mark as complete if it's not.
+    if lesson.html_content:
+        if not lesson.is_completed:
+            lesson.is_completed = True
+            course = lesson.course
+            course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
+            db.session.commit()
+        return redirect(url_for('show_lesson', lesson_id=lesson.id))
+
+    # Otherwise, render the streaming page
+    return render_template('lesson_stream.html', lesson=lesson)
 
 
-@app.route('/get_lesson_data/<int:lesson_id>')
+@app.route('/stream_lesson_data/<int:lesson_id>')
 @login_required
-def get_lesson_data(lesson_id):
+def stream_lesson_data(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson or lesson.course.user_id != current_user.id:
-        return jsonify({"error": "Unauthorized"}), 403
+        return Response("Unauthorized", status=403)
 
-    generate_lesson_content_service(lesson, current_user)
+    lesson_content_generator = generate_lesson_content_service(lesson, current_user)
 
-    if not lesson.is_completed:
-        lesson.is_completed = True
-        course = lesson.course
-        course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
-        db.session.commit()
-
-    return jsonify({'redirect_url': url_for('show_lesson', lesson_id=lesson.id)})
+    return Response(stream_with_context(lesson_content_generator), mimetype='text/plain')
 
 
 # --- Unit Test Routes ---
