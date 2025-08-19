@@ -2,3 +2,4 @@
 .idea
 .flaskenv
 .idea/workspace.xml
+.env
