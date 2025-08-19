@@ -45,7 +45,7 @@ a:hover { background: #4a9a_ia; }
                <strong>{% if lang == 'russian' %}📝 Ваш ответ:{% else %}📝 Your Answer:{% endif %}</strong> {{ item.answer }}<br>
                <strong>{% if lang == 'russian' %}✅ Оценка:{% else %}✅ Assessment:{% endif %}</strong> {{ item.assessment }}</p>
         {% endfor %}
-        <a href="{{ url_for('home') }}">{% if lang == 'russian' %}🔁 Пройти другой тест{% else %}🔁 Take Another Test{% endif %}</a>
+
         {% if course_id %}
             <a href="{{ url_for('show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
         {% endif %}
