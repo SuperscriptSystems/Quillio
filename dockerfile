@@ -10,4 +10,11 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 
-CMD ["gunicorn", "run:app", "--workers", "3", "--bind", "0.0.0.0:8000"]
+# Set Flask app for CLI commands used in entrypoint
+ENV FLASK_APP=run.py
+
+# Ensure entrypoint script is executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Run migrations on startup, then launch Gunicorn
+ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
