@@ -16,15 +16,29 @@
     .course-info a { text-decoration: none; color: #F0F0F0; font-weight: bold; font-size: 1.2em; }
     .course-info a:hover { color: #5cb85c; }
     .course-actions { display: flex; gap: 10px; align-items: center; }
-    .archive-form button { background: none; border: 1px solid #d9534f; color: #d9534f; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    .course-actions .certificate-btn { font-size: 1em; font-weight: normal; padding: 5px 10px; border-radius: 5px; line-height: 1; display: inline-flex; align-items: center; }
+    .archive-form button { background: none; border: 1px solid #d9534f; color: #d9534f; padding: 5px 10px; border-radius: 5px; cursor: pointer; line-height: 1; }
     .archive-form button:hover { background: #d9534f; color: white; }
     .progress-bar-container { background-color: #4a5e6a; height: 10px; }
     .progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
     .progress-bar.completed { background-color: #f0ad4e; }
     .no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
     .new-course-wrapper { text-align: center; }
-    .certificate-btn { background: #f0ad4e; color: #fff; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+    .certificate-btn { background: #f0ad4e; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; }
     .certificate-btn:hover { background: #d4963c; text-decoration: none; }
+    /* Ensure certificate and archive buttons match size exactly in course actions */
+    .course-actions .certificate-btn,
+    .course-actions .archive-form button {
+        height: 32px;
+        line-height: 20px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        font-weight: normal;
+    }
  </style>
 
  <div class="container">
