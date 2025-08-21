@@ -28,6 +28,8 @@ h1 { color: #F0F0F0; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; }
 p { margin: 25px 0; line-height: 1.7; color: #E0E0E0; padding-bottom: 20px; border-bottom: 1px solid #4a5e6a; }
 p:last-of-type { border-bottom: none; }
 strong { color: #F0F0F0; }
+.status-correct { color: #5cb85c; font-weight: 700; }
+.status-incorrect { color: #d9534f; font-weight: 700; }
 a { display: inline-block; margin-top: 20px; margin-right: 10px; text-decoration: none; background: #5cb85c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; transition: background-color 0.3s ease; }
 a:hover { background: #4a9a_ia; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -46,7 +48,21 @@ a:hover { background: #4a9a_ia; }
         {% for item in answers %}
             <p><strong>{% if lang == 'russian' %}В:{% else %}Q:{% endif %}</strong> {{ item.question }}<br>
                <strong>{% if lang == 'russian' %}📝 Ваш ответ:{% else %}📝 Your Answer:{% endif %}</strong> {{ item.answer }}<br>
-               <strong>{% if lang == 'russian' %}✅ Оценка:{% else %}✅ Assessment:{% endif %}</strong> {{ item.assessment }}</p>
+               <strong>{% if lang == 'russian' %}✅ Оценка:{% else %}✅ Assessment:{% endif %}</strong>
+               {% set assess = item.assessment or '' %}
+               {% set lower = assess|lower %}
+               {% if lower[:7] == 'correct' %}
+                   <span class="status-correct">{{ assess[:7] }}</span>{{ assess[7:] }}
+               {% elif lower[:9] == 'incorrect' %}
+                   <span class="status-incorrect">{{ assess[:9] }}</span>{{ assess[9:] }}
+               {% elif lower[:9] == 'правильно' %}
+                   <span class="status-correct">{{ assess[:9] }}</span>{{ assess[9:] }}
+               {% elif lower[:12] == 'неправильно' %}
+                   <span class="status-incorrect">{{ assess[:12] }}</span>{{ assess[12:] }}
+               {% else %}
+                   {{ assess }}
+               {% endif %}
+            </p>
         {% endfor %}
 
         {% if course_id %}
