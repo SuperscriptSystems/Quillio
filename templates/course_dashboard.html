@@ -15,12 +15,16 @@
     .course-info { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
     .course-info a { text-decoration: none; color: #F0F0F0; font-weight: bold; font-size: 1.2em; }
     .course-info a:hover { color: #5cb85c; }
+    .course-actions { display: flex; gap: 10px; align-items: center; }
     .archive-form button { background: none; border: 1px solid #d9534f; color: #d9534f; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
     .archive-form button:hover { background: #d9534f; color: white; }
     .progress-bar-container { background-color: #4a5e6a; height: 10px; }
     .progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+    .progress-bar.completed { background-color: #f0ad4e; }
     .no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
     .new-course-wrapper { text-align: center; }
+    .certificate-btn { background: #f0ad4e; color: #fff; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+    .certificate-btn:hover { background: #d4963c; text-decoration: none; }
  </style>
 
  <div class="container">
@@ -37,12 +41,17 @@
                 <li class="course-item">
                     <div class="course-info">
                         <a href="{{ url_for('show_course', course_id=course.id) }}">{{ course.course_title }}</a>
-                        <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
-                            <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
-                        </form>
+                        <div class="course-actions">
+                            {% if progress_percent >= 100 %}
+                                <a href="{{ url_for('show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
+                            {% endif %}
+                            <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
+                                <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
+                            </form>
+                        </div>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: {{ progress_percent }}%;"></div>
+                        <div class="progress-bar {{ 'completed' if progress_percent >= 100 }}" style="width: {{ progress_percent }}%;"></div>
                     </div>
                 </li>
             {% endfor %}
