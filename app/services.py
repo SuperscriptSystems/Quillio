@@ -77,7 +77,7 @@ def calculate_percentage_score_service(detailed_results):
 # --- Course and Lesson Services (Using OpenAI) ---
 def generate_knowledge_assessment_service(detailed_results):
     """Generates a qualitative knowledge assessment using OpenAI and updates token count."""
-    prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Speak directly to the user (e.g., 'Your responses indicate...'). Do not use markdown.\n\n"
+    prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Do not address the user directly; use third-person phrasing (e.g., 'users responses indicate...'). Do not use markdown.\n\n"
     for result in detailed_results:
         prompt += f"Q: {result['question']}\nA: {result['answer']}\nAssessment: {result['assessment']}\n\n"
     assessment_text, tokens = ask_openai(prompt, model="gpt-4o-mini", json_mode=False)
