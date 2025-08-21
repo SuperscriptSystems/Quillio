@@ -37,11 +37,37 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
     if request.method == 'POST':
-        username, password = request.form.get('username'), request.form.get('password')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        full_name = request.form.get('full_name')
+        lesson_length = request.form.get('lesson_length')
+        language = request.form.get('language')
+        age = request.form.get('age')
+        bio = request.form.get('bio')
+
+        # Basic validation
+        if not username or not password or not full_name or not lesson_length or not language:
+            flash('Please fill in all required fields.', 'warning')
+            return redirect(url_for('register'))
+
         if User.query.filter_by(username=username).first():
             flash('Username already exists.', 'warning')
             return redirect(url_for('register'))
-        new_user = User(username=username)
+
+        try:
+            lesson_length_val = int(lesson_length)
+        except (TypeError, ValueError):
+            flash('Lesson length must be a number.', 'warning')
+            return redirect(url_for('register'))
+
+        new_user = User(
+            username=username,
+            full_name=full_name.strip(),
+            preferred_lesson_length=lesson_length_val,
+            language=language,
+            age=int(age) if age else None,
+            bio=bio
+        )
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -164,7 +190,7 @@ def show_certificate(course_id):
     completion_date = datetime.date.today().strftime("%B %d, %Y")
 
     return render_template('certificate.html',
-                           user_name=current_user.username,
+                           user_name=(current_user.full_name or current_user.username),
                            course_title=course.course_title,
                            completion_date=completion_date)
 
