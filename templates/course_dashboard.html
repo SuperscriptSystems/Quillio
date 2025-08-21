@@ -8,7 +8,7 @@
     .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; margin-bottom: 20px;}
     .header h1 { margin: 0; color: #F0F0F0; border: none; padding: 0;}
-    .new-course-btn { background: #5cb85c; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+    .new-course-btn { background: #5cb85c; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; margin: 20px auto 0; }
     .new-course-btn:hover { background: #4a9a4a; }
     .course-list { list-style-type: none; padding-left: 0; }
     .course-item { background: #2A3F4A; margin-bottom: 15px; border-radius: 8px; overflow: hidden; }
@@ -20,12 +20,12 @@
     .progress-bar-container { background-color: #4a5e6a; height: 10px; }
     .progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
     .no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
-</style>
+    .new-course-wrapper { text-align: center; }
+ </style>
 
-<div class="container">
+ <div class="container">
     <div class="header">
         <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
-        <a href="{{ url_for('home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
     </div>
 
     {% if courses %}
@@ -52,5 +52,8 @@
             <p>{% if lang == 'russian' %}У вас нет активных курсов.{% else %}You don't have any active courses.{% endif %}</p>
         </div>
     {% endif %}
-</div>
-{% endblock %}
+    <div class="new-course-wrapper">
+        <a href="{{ url_for('home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
+    </div>
+ </div>
+ {% endblock %}
