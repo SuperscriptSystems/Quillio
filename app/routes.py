@@ -462,8 +462,22 @@ def get_unit_test_data(course_id, unit_title, test_title):
     if course.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
 
-    # Gather all lesson content for this unit to provide context for the test
+    # Check if all lessons in this unit are completed
     lessons_in_unit = Lesson.query.filter_by(course_id=course_id, unit_title=unit_title).all()
+    incomplete_lessons = [lesson.lesson_title for lesson in lessons_in_unit if not lesson.is_completed]
+    
+    if incomplete_lessons:
+        lang = current_user.language
+        if lang == 'russian':
+            message = f"Пожалуйста, завершите все уроки в разделе {unit_title} перед прохождением теста. "
+            message += f"Незавершённые уроки: {', '.join(incomplete_lessons)}"
+        else:
+            message = f"Please complete all lessons in {unit_title} before taking the test. "
+            message += f"Incomplete lessons: {', '.join(incomplete_lessons)}"
+        flash(message, "warning")
+        return jsonify({'redirect_url': url_for('show_course', course_id=course_id)})
+
+    # All lessons are completed, gather content for test context
     lesson_content_context = "\n\n".join([lesson.html_content for lesson in lessons_in_unit if lesson.html_content])
 
     topic = f"{unit_title}: {test_title}"
