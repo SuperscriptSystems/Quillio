@@ -2,6 +2,9 @@ from app.configuration import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSONB
+import secrets
+import random
+from datetime import datetime, timedelta
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -16,12 +19,34 @@ class User(UserMixin, db.Model):
     bio = db.Column(db.Text, nullable=True)
 
     tokens_used = db.Column(db.Integer, nullable=False, default=0)
+    
+    # Email verification fields
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    verification_token = db.Column(db.String(100), nullable=True)
+    token_expires_at = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def generate_verification_code(self):
+        """Generate a new 6-digit email verification code that expires in 24 hours"""
+        self.verification_token = str(random.randint(100000, 999999))
+        self.token_expires_at = datetime.utcnow() + timedelta(hours=24)
+        return self.verification_token
+    
+    def verify_email_code(self, code):
+        """Verify email with the provided 6-digit code"""
+        if (self.verification_token == str(code) and 
+            self.token_expires_at and 
+            datetime.utcnow() < self.token_expires_at):
+            self.is_verified = True
+            self.verification_token = None
+            self.token_expires_at = None
+            return True
+        return False
 
 class Course(db.Model):
     __tablename__ = 'courses'

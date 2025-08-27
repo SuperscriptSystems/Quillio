@@ -15,6 +15,7 @@ from app.services import (
     edit_course_service,
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
+from app.email_service import send_verification_email, send_resend_verification_email
 
 
 # --- Authentication and Main Navigation Routes ---
@@ -23,10 +24,18 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
     if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and user.check_password(request.form.get('password')):
-            login_user(user)
-            return redirect(url_for('course_dashboard'))
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            # Generate and send login verification code (2FA for all users)
+            verification_code = user.generate_verification_code()
+            db.session.commit()  # Save the verification code immediately
+            
+            # Always redirect to code screen, send email in background
+            send_verification_email(user)
+            return redirect(url_for('login_verify_code', email=email))
         else:
             flash('Invalid email or password. Please try again.', 'danger')
     return render_template('login.html')
@@ -71,14 +80,107 @@ def register():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
-        flash('Registration successful! Please log in.', 'success')
-        return redirect(url_for('login'))
+        
+        # Send verification email
+        if send_verification_email(new_user):
+            db.session.commit()  # Save the verification code
+            flash('Registration successful! Please check your email for a 6-digit verification code.', 'success')
+            return redirect(url_for('verify_code', email=email))
+        else:
+            flash('Registration successful, but we could not send the verification email. Please contact support.', 'warning')
+            return redirect(url_for('login'))
     return render_template('register.html')
 
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
     return "OK", 200
+
+
+@app.route('/verify_code', methods=['GET', 'POST'])
+def verify_code():
+    """Email verification code entry route for registration"""
+    email = request.args.get('email') or request.form.get('email')
+    
+    if not email:
+        flash('Invalid verification request.', 'danger')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        verification_code = request.form.get('verification_code')
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            flash('Invalid verification request.', 'danger')
+            return redirect(url_for('login'))
+        
+        if user.is_verified:
+            flash('Your email is already verified. You can log in.', 'info')
+            return redirect(url_for('login'))
+        
+        if user.verify_email_code(verification_code):
+            db.session.commit()
+            flash('Email verified successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Invalid or expired verification code. Please try again.', 'danger')
+    
+    return render_template('verify_code.html', email=email, verification_type='registration')
+
+
+@app.route('/login_verify_code', methods=['GET', 'POST'])
+def login_verify_code():
+    """Login verification code entry route"""
+    email = request.args.get('email') or request.form.get('email')
+    
+    if not email:
+        flash('Invalid login request.', 'danger')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        verification_code = request.form.get('verification_code')
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            flash('Invalid login request.', 'danger')
+            return redirect(url_for('login'))
+        
+        if user.verify_email_code(verification_code):
+            db.session.commit()
+            login_user(user)
+            flash('Login successful!', 'success')
+            return redirect(url_for('course_dashboard'))
+        else:
+            flash('Invalid or expired verification code. Please try again.', 'danger')
+    
+    return render_template('verify_code.html', email=email, verification_type='login')
+
+
+@app.route('/resend_verification', methods=['GET', 'POST'])
+def resend_verification():
+    """Resend verification email"""
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            flash('No account found with that email address.', 'danger')
+            return redirect(url_for('resend_verification'))
+        
+        if user.is_verified:
+            flash('Your email is already verified. You can log in.', 'info')
+            return redirect(url_for('login'))
+        
+        if send_resend_verification_email(user):
+            db.session.commit()
+            flash('Verification code sent! Please check your inbox.', 'success')
+            return redirect(url_for('verify_code', email=email))
+        else:
+            flash('Failed to send verification code. Please try again later.', 'danger')
+        
+        return redirect(url_for('resend_verification'))
+    
+    return render_template('resend_verification.html')
 
 
 @app.route('/logout')
