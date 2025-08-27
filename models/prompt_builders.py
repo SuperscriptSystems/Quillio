@@ -29,6 +29,13 @@ class TestPromptBuilder:
             {lesson_context_string}
 
             Create {number_of_questions} multiple choice questions.
+            
+            IMPORTANT CONSTRAINTS:
+            - Each question must have EXACTLY ONE correct answer
+            - Do NOT create questions where multiple options are correct (e.g., "Which of the following are true: 1,2,4")
+            - Do NOT create questions asking to "select all that apply"
+            - Each question should have 4 options with only 1 being correct
+            - Make sure the incorrect options are plausible but clearly wrong
             Your entire response MUST be a valid JSON object.
             Generate the response in the following language: {language}.
             All user-visible string values (like test-name, topic, question, and option text) must be in {language}.
