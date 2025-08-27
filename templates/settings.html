@@ -13,7 +13,7 @@
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    h1 {
+    h1, h2 {
         color: #F0F0F0;
         border-bottom: 2px solid #4a5e6a;
         padding-bottom: 10px;
@@ -23,7 +23,7 @@
         margin-bottom: 8px;
         font-weight: bold;
     }
-    input[type="number"], select, textarea {
+    input[type="number"], input[type="password"], select, textarea {
         width: 100%;
         box-sizing: border-box;
         padding: 12px;
@@ -47,7 +47,33 @@
         cursor: pointer;
         transition: background-color 0.3s ease;
     }
-    button:hover { background: #4a9a4a; }
+    button:hover {
+        background: #4a9a4a;
+    }
+    button:disabled {
+        background: #666;
+        cursor: not-allowed;
+    }
+    .password-section {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid #4a5e6a;
+    }
+    .verification-notice {
+        background: #d9534f;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .verification-notice a {
+        color: #fff;
+        text-decoration: underline;
+    }
+    .disabled-form {
+        opacity: 0.5;
+        pointer-events: none;
+    }
 </style>
 
 <div class="container">
@@ -70,5 +96,35 @@
 
         <button type="submit">{% if lang == 'russian' %}Сохранить настройки{% else %}Save Settings{% endif %}</button>
     </form>
+
+    <!-- Change Password Section -->
+    <div class="password-section">
+        <h2>{% if lang == 'russian' %}Изменить пароль{% else %}Change Password{% endif %}</h2>
+
+        {% if not current_user.is_verified %}
+        <div class="verification-notice">
+            <strong>{% if lang == 'russian' %}Внимание:{% else %}Notice:{% endif %}</strong>
+            {% if lang == 'russian' %}Вы должны подтвердить свой email перед изменением пароля.{% else %}You must verify your email before changing your password.{% endif %}
+            <a href="{{ url_for('resend_verification') }}">
+                {% if lang == 'russian' %}Отправить код подтверждения повторно{% else %}Resend verification code{% endif %}
+            </a>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('change_password') }}" {% if not current_user.is_verified %}class="disabled-form"{% endif %}>
+            <label for="current_password">{% if lang == 'russian' %}Текущий пароль{% else %}Current Password{% endif %}</label>
+            <input type="password" id="current_password" name="current_password" required {% if not current_user.is_verified %}disabled{% endif %}>
+
+            <label for="new_password">{% if lang == 'russian' %}Новый пароль (минимум 6 символов){% else %}New Password (minimum 6 characters){% endif %}</label>
+            <input type="password" id="new_password" name="new_password" minlength="6" required {% if not current_user.is_verified %}disabled{% endif %}>
+
+            <label for="confirm_password">{% if lang == 'russian' %}Подтвердите новый пароль{% else %}Confirm New Password{% endif %}</label>
+            <input type="password" id="confirm_password" name="confirm_password" minlength="6" required {% if not current_user.is_verified %}disabled{% endif %}>
+
+            <button type="submit" {% if not current_user.is_verified %}disabled{% endif %}>
+                {% if lang == 'russian' %}Изменить пароль{% else %}Change Password{% endif %}
+            </button>
+        </form>
+    </div>
 </div>
 {% endblock %}
