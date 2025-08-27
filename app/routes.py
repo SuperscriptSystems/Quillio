@@ -23,12 +23,12 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form.get('username')).first()
+        user = User.query.filter_by(email=request.form.get('email')).first()
         if user and user.check_password(request.form.get('password')):
             login_user(user)
             return redirect(url_for('course_dashboard'))
         else:
-            flash('Invalid username or password. Please try again.', 'danger')
+            flash('Invalid email or password. Please try again.', 'danger')
     return render_template('login.html')
 
 
@@ -37,7 +37,7 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         full_name = request.form.get('full_name')
         lesson_length = request.form.get('lesson_length')
@@ -46,12 +46,12 @@ def register():
         bio = request.form.get('bio')
 
         # Basic validation
-        if not username or not password or not full_name or not lesson_length or not language:
+        if not email or not password or not full_name or not lesson_length or not language:
             flash('Please fill in all required fields.', 'warning')
             return redirect(url_for('register'))
 
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'warning')
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists.', 'warning')
             return redirect(url_for('register'))
 
         try:
@@ -61,7 +61,7 @@ def register():
             return redirect(url_for('register'))
 
         new_user = User(
-            username=username,
+            email=email,
             full_name=full_name.strip(),
             preferred_lesson_length=lesson_length_val,
             language=language,
@@ -190,7 +190,7 @@ def show_certificate(course_id):
     completion_date = datetime.date.today().strftime("%B %d, %Y")
 
     return render_template('certificate.html',
-                           user_name=(current_user.full_name or current_user.username),
+                           user_name=(current_user.full_name or current_user.email),
                            course_title=course.course_title,
                            completion_date=completion_date)
 

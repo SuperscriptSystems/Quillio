@@ -106,7 +106,7 @@
             <a href="{{ url_for('course_dashboard') }}">🧠 Quillio</a>
         </div>
         <div class="nav-links">
-            <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.username }}{% else %}Welcome, {{ current_user.username }}{% endif %}</span>
+            <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.email }}{% else %}Welcome, {{ current_user.email }}{% endif %}</span>
             <a href="{{ url_for('course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
             <a href="{{ url_for('settings') }}">{% if current_user.language == 'russian' %}Настройки{% else %}Settings{% endif %}</a>
             <a href="{{ url_for('logout') }}">{% if current_user.language == 'russian' %}Выйти{% else %}Logout{% endif %}</a>

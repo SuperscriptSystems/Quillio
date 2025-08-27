@@ -9,7 +9,7 @@
         body { font-family: 'Roboto', sans-serif; background: #2A3F4A; color: #F0F0F0; margin: 0; padding: 40px 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .container { background: #344955; border-radius: 12px; padding: 40px; max-width: 400px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         h1 { text-align: center; color: #F0F0F0; margin-bottom: 25px; }
-        input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 12px; margin-bottom: 20px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-size: 15px; }
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 12px; margin-bottom: 20px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-size: 15px; }
         input:focus { outline: none; border-color: #5cb85c; }
         button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
         button:hover { background: #4a9a4a; }
@@ -33,7 +33,7 @@
             {% endif %}
         {% endwith %}
         <form method="POST" action="{{ url_for('login') }}">
-            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
