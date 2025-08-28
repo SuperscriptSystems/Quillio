@@ -346,7 +346,9 @@ def test_ready():
 @app.route('/results')
 @login_required
 def show_results():
-    if 'assessed_answers' not in session: return redirect(url_for('home'))
+    if 'assessed_answers' not in session: 
+        return redirect(url_for('home'))
+    
     return render_template('results.html',
                            answers=session['assessed_answers'],
                            knowledge_assessment=session.get('knowledge_assessment'),

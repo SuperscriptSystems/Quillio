@@ -188,7 +188,7 @@ class CoursePromptBuilder:
             Return the course structure using the format:
 
             {{
-              "course_title": "Personalized Course for {topic}",
+              "course_title": "{topic}",
               "units": [
                 {{
                   "unit_title": "Unit 1: Foundations of {topic}",
@@ -289,8 +289,24 @@ class ChatPromptBuilder:
 
 class CourseEditorPromptBuilder:
     @staticmethod
+    def build_title_improvement_prompt(current_title, language="english"):
+        """Generate a prompt to improve the course title."""
+        return f"Please make this name for a course more concise and engaging: {current_title}"
+
+    @staticmethod
     def build_edit_prompt(current_course_json, user_request, language="english"):
-        # Convert the current course data to a pretty-printed JSON string for the prompt
+        # Check if this is a title update request
+        title_keywords = ["title", "name", "rename", "call this"]
+        is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
+        
+        # If it's a title update, use the fast model for just the title
+        if is_title_update and "course_title" in current_course_json:
+            return {
+                "course_title": user_request,  # Will be replaced by AI in the service
+                "units": current_course_json.get("units", [])
+            }
+            
+        # For other edits, use the full course structure
         course_str = json.dumps(current_course_json, indent=2)
 
         return f"""

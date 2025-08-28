@@ -4,6 +4,7 @@ import time
 import markdown
 from flask import url_for
 from flask_login import current_user
+from flask import session
 from app.ai_clients import ask_openai, ask_gemini, ask_gemini_stream, ask_openai_stream
 from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, \
     ChatPromptBuilder, CourseEditorPromptBuilder
@@ -88,30 +89,43 @@ def generate_knowledge_assessment_service(detailed_results):
 
 def create_course_service(user, topic, knowledge_assessment, assessed_answers):
     """Creates a course structure using OpenAI and updates token count."""
-    user_profile = {'age': user.age, 'bio': user.bio}
-    prompt = CoursePromptBuilder.build_course_structure_prompt(topic, knowledge_assessment, assessed_answers,
-                                                               user.language, user.preferred_lesson_length,
-                                                               user_profile=user_profile)
-    raw_course, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
-    if tokens > 0:
-        user.tokens_used += tokens
-        db.session.commit()
+    prompt = CoursePromptBuilder.build_course_structure_prompt(
+        topic, knowledge_assessment, assessed_answers, user.language, user)
+    raw_output, tokens = ask_openai(prompt, json_mode=True)
+    _update_token_count(tokens)
 
-    if not raw_course or "Error:" in raw_course:
+    if not raw_output or "Error:" in raw_output:
+        print(f"Failed to generate course structure. AI response: {raw_output}")
         return None
-    course_json = JsonExtractor.extract_json(raw_course)
 
-    new_course = Course(user_id=user.id, course_title=course_json.get('course_title', f"Course on {topic}"),
-                        course_data=course_json)
-    db.session.add(new_course)
-    db.session.commit()
+    course_data = JsonExtractor.extract_json(raw_output)
+    if not course_data:
+        print("Failed to parse course structure from AI response.")
+        return None
 
-    for unit in course_json.get('units', []):
+    # Generate improved course name and use it as the main title
+    original_name = course_data.get("course_title", topic)
+    improved_name = generate_improved_course_name(original_name)
+    
+    # Update the course title in the course data
+    course_data['course_title'] = improved_name
+
+    # Create the course with the improved name
+    course = Course(
+        user_id=user.id,
+        course_title=improved_name,
+        course_data=course_data
+    )
+    db.session.add(course)
+    db.session.commit()  # Commit to get the course ID
+
+    for unit in course_data.get('units', []):
         for lesson_data in unit.get('lessons', []):
-            new_lesson = Lesson(course_id=new_course.id, unit_title=unit.get('unit_title'),
+            new_lesson = Lesson(course_id=course.id, unit_title=unit.get('unit_title'),
                                 lesson_title=lesson_data.get('lesson_title'))
             db.session.add(new_lesson)
     db.session.commit()
+    return course
     return new_course
 
 
@@ -129,7 +143,7 @@ def generate_lesson_content_service(lesson, user):
     )
 
     def content_generator():
-        # Using ask_openai_stream now
+        # Using ask_openai_stream
         response_stream = ask_openai_stream(prompt, model="gpt-4o")
 
         full_markdown_chunks = []
@@ -160,6 +174,22 @@ def generate_lesson_content_service(lesson, user):
         print(f"Lesson {lesson.id} saved to database.")
 
     return content_generator()
+
+
+def generate_improved_course_name(original_name):
+    """Generate an improved, concise and informative course name using AI."""
+    prompt = f"Improve this course name to be more concise and informative. Keep it under 60 characters. Original name: {original_name}. Return ONLY the improved name, no quotes or additional text."
+    
+    # Try Gemini first, fall back to OpenAI if needed
+    improved_name, tokens = ask_gemini(prompt)
+    if not improved_name or "Error:" in improved_name:
+        improved_name, tokens = ask_openai(prompt)
+        
+    _update_token_count(tokens)
+    
+    # Clean up the response
+    improved_name = improved_name.strip('"\'').strip()
+    return improved_name if improved_name and len(improved_name) > 0 else original_name
 
 
 def _generate_next_up_link(lesson, user):
@@ -216,8 +246,32 @@ def get_tutor_response_service(lesson, chat_history, user_question, user):
 
 def edit_course_service(course, user_request, language):
     """Uses an AI to edit the course structure and syncs the database."""
+    # Check if this is a title update request
+    title_keywords = ["title", "name", "rename", "call this"]
+    is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
+    
+    if is_title_update and "course_title" in course.course_data:
+        # For title updates, use a fast model to generate an improved title
+        prompt = CourseEditorPromptBuilder.build_title_improvement_prompt(
+            user_request, language
+        )
+        new_title, tokens = ask_openai(prompt, model="gpt-4o-mini", json_mode=False)
+        _update_token_count(tokens)
+        
+        if new_title and "Error:" not in new_title:
+            # Clean up the title (remove quotes, extra spaces, etc.)
+            new_title = new_title.strip('"\' ')
+            # Update the course data with the new title
+            course_data = course.course_data
+            course_data["course_title"] = new_title
+            course.course_data = course_data
+            db.session.commit()
+            return course_data, None
+        else:
+            return None, "Failed to generate an improved title."
+    
+    # For non-title updates, use the full course editor
     prompt = CourseEditorPromptBuilder.build_edit_prompt(course.course_data, user_request, language)
-
     new_course_str, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
     _update_token_count(tokens)
 

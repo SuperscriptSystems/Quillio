@@ -2,6 +2,66 @@
 
 {% block title %}{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}{% endblock %}
 
+{% block scripts %}
+<script>
+// Automatically improve all course titles on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    const courseTitles = document.querySelectorAll('[id^="course-title-"]');
+    
+    for (const titleElement of courseTitles) {
+        const courseId = titleElement.id.split('-')[2];
+        const currentTitle = titleElement.textContent.trim();
+        
+        try {
+            const response = await fetch(`/course/${courseId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    request: `Improve the course title: ${currentTitle}`
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success && result.course && result.course.course_title) {
+                titleElement.textContent = result.course.course_title;
+            }
+        } catch (error) {
+            console.error('Error improving title:', error);
+        }
+    }
+});
+
+async function improveTitle(courseId, currentTitle) {
+    try {
+        const response = await fetch(`/course/${courseId}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                request: `Improve the course title: ${currentTitle}`
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            // Reload the page to see the updated title
+            window.location.reload();
+        } else {
+            alert('Failed to improve title: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error improving title:', error);
+        alert('An error occurred while improving the title');
+    }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 {% set lang = current_user.language %}
 <style>
@@ -39,9 +99,37 @@
         align-items: center;
         font-weight: normal;
     }
- </style>
+    .course-list {
+        list-style: none;
+        padding: 0;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .btn {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-secondary {
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        background: transparent;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-sm {
+        font-size: 0.8rem;
+    }
+</style>
 
- <div class="container">
+<div class="container">
     <div class="header">
         <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
     </div>
@@ -49,19 +137,22 @@
     {% if courses %}
         <ul class="course-list">
             {% for course in courses %}
-                <!-- THIS IS THE CORRECTED LINE -->
                 {% set total_lessons = course.course_data.units | map(attribute='lessons') | sum(start=[]) | length %}
                 {% set progress_percent = (course.completed_lessons / total_lessons * 100) if total_lessons > 0 else 0 %}
                 <li class="course-item">
                     <div class="course-info">
-                        <a href="{{ url_for('show_course', course_id=course.id) }}">{{ course.course_title }}</a>
-                        <div class="course-actions">
-                            {% if progress_percent >= 100 %}
-                                <a href="{{ url_for('show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
-                            {% endif %}
-                            <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
-                                <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
-                            </form>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="course-title">
+                                <a href="{{ url_for('show_course', course_id=course.id) }}" id="course-title-{{ course.id }}">{{ course.course_title | shorten_title }}</a>
+                            </div>
+                            <div class="course-actions">
+                                {% if progress_percent >= 100 %}
+                                    <a href="{{ url_for('show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
+                                {% endif %}
+                                <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
+                                    <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     <div class="progress-bar-container">

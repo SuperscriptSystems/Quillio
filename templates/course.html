@@ -21,7 +21,11 @@
     .certificate-btn { display: inline-block; background: #f0ad4e; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-bottom: 20px; transition: background-color 0.3s; }
     .certificate-btn:hover { background: #d4963c; text-decoration: none; }
 
-    #edit-course-btn { position: absolute; top: 25px; right: 25px; background: #5bc0de; color: white; border: none; border-radius: 5px; padding: 5px 15px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-decoration: none; }
+    #edit-course-btn { background: #5bc0de; color: white; border: none; border-radius: 5px; padding: 8px 15px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-decoration: none; }
+    .btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; margin-left: 10px; }
+    .btn-outline-secondary { border: 1px solid #6c757d; color: #6c757d; background: transparent; }
+    .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+    .btn-sm { font-size: 0.9rem; }
     #edit-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
     #edit-modal { background: #344955; padding: 20px; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
     #edit-modal h2 { margin-top: 0; }
@@ -36,7 +40,7 @@
 
 <div class="container">
     <a href="#" id="edit-course-btn" title="Edit Course with AI">{% if lang == 'russian' %}Обновить курс{% else %}Update Course{% endif %}</a>
-    <h1>{{ course.course_title }}</h1>
+    <h1 id="course-title">{{ course.course_title | shorten_title }}</h1>
 
     {% if is_course_complete %}
         <a href="{{ url_for('show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
@@ -92,7 +96,60 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+async function improveTitle(courseId, currentTitle) {
+    try {
+        const response = await fetch(`/course/${courseId}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                request: `Improve the course title: ${currentTitle}`
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            // Reload the page to see the updated title
+            window.location.reload();
+        } else {
+            alert('Failed to improve title: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error improving title:', error);
+        alert('An error occurred while improving the title');
+    }
+}
+
+
+// Automatically improve the course title on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    // Improve title
+    const titleElement = document.getElementById('course-title');
+    if (titleElement) {
+        try {
+            const response = await fetch(`/course/{{ course_obj.id }}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    request: `Improve the course title: {{ course.course_title | tojson | safe }}`
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success && result.course && result.course.course_title) {
+                titleElement.textContent = result.course.course_title;
+            }
+        } catch (error) {
+            console.error('Error improving title:', error);
+        }
+    }
+    
+    // Original event listeners
     const editBtn = document.getElementById('edit-course-btn');
     const modalOverlay = document.getElementById('edit-modal-overlay');
     const closeModalBtn = document.getElementById('close-modal-btn');
