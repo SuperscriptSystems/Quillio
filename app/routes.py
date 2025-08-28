@@ -50,12 +50,11 @@ def register():
         password = request.form.get('password')
         full_name = request.form.get('full_name')
         lesson_length = request.form.get('lesson_length')
-        language = request.form.get('language')
         age = request.form.get('age')
         bio = request.form.get('bio')
 
         # Basic validation
-        if not email or not password or not full_name or not lesson_length or not language:
+        if not email or not password or not full_name or not lesson_length:
             flash('Please fill in all required fields.', 'warning')
             return redirect(url_for('register'))
 
@@ -73,7 +72,6 @@ def register():
             email=email,
             full_name=full_name.strip(),
             preferred_lesson_length=lesson_length_val,
-            language=language,
             age=int(age) if age else None,
             bio=bio
         )
