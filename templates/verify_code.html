@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Verify Your Email - Quillio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background: #2A3F4A; color: #F0F0F0; margin: 0; padding: 40px 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { background: #344955; border-radius: 12px; padding: 40px; max-width: 400px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        h1 { text-align: center; color: #F0F0F0; margin-bottom: 25px; }
+        .verification-code-input { 
+            width: 100%; 
+            box-sizing: border-box; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border: 1px solid #4a5e6a; 
+            border-radius: 8px; 
+            background: #2A3F4A; 
+            color: #F0F0F0; 
+            font-size: 24px; 
+            text-align: center; 
+            letter-spacing: 8px; 
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        input:focus { outline: none; border-color: #5cb85c; }
+        button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
+        button:hover { background: #4a9a4a; }
+        p { text-align: center; margin-top: 20px; font-size: 14px; }
+        a { color: #5cb85c; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 8px; color: #fff; text-align: center; }
+        .success { background-color: #5cb85c; }
+        .danger { background-color: #d9534f; }
+        .warning { background-color: #f0ad4e; }
+        .info { background-color: #5bc0de; }
+        .instructions { text-align: center; margin-bottom: 30px; color: #B0B0B0; }
+        .email-display { color: #5cb85c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if verification_type == 'login' %}
+            <h1>Complete Login</h1>
+        {% else %}
+            <h1>Verify Your Email</h1>
+        {% endif %}
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="instructions">
+            {% if verification_type == 'login' %}
+                <p>✅ A 6-digit verification code has been sent to:</p>
+                <p class="email-display">{{ email }}</p>
+                <p>Enter the code below to complete your login.</p>
+                <p style="font-size: 12px; color: #888;">Check your email inbox (and spam folder) for the verification code.</p>
+            {% else %}
+                <p>We've sent a 6-digit verification code to:</p>
+                <p class="email-display">{{ email }}</p>
+                <p>Enter the code below to verify your account.</p>
+            {% endif %}
+        </div>
+        
+        {% if verification_type == 'login' %}
+            <form method="POST" action="{{ url_for('login_verify_code') }}">
+        {% else %}
+            <form method="POST" action="{{ url_for('verify_code') }}">
+        {% endif %}
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="text" 
+                   name="verification_code" 
+                   class="verification-code-input"
+                   placeholder="000000" 
+                   maxlength="6" 
+                   pattern="[0-9]{6}"
+                   required
+                   autocomplete="off">
+            {% if verification_type == 'login' %}
+                <button type="submit">Complete Login</button>
+            {% else %}
+                <button type="submit">Verify Email</button>
+            {% endif %}
+        </form>
+        
+        <p>Didn't receive the code? <a href="{{ url_for('resend_verification') }}">Resend verification code</a></p>
+        <p><a href="{{ url_for('login') }}">Back to Login</a></p>
+    </div>
+
+    <script>
+        // Auto-format the verification code input
+        document.querySelector('.verification-code-input').addEventListener('input', function(e) {
+            // Remove any non-digit characters
+            this.value = this.value.replace(/\D/g, '');
+            
+            // Limit to 6 digits
+            if (this.value.length > 6) {
+                this.value = this.value.slice(0, 6);
+            }
+        });
+    </script>
+</body>
+</html>
