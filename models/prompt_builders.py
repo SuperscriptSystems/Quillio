@@ -210,153 +210,216 @@ class CoursePromptBuilder:
 
 class ChatPromptBuilder:
     @staticmethod
-    def build_chat_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
-        """
-        Builds a prompt for the AI tutor to respond to user questions in the context of a lesson.
+    def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, 
+                          language="english", course_structure=None, current_lesson_title=None):
+        # Format the chat history for the prompt
+        history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
         
-        Args:
-            lesson_content (str): The content of the current lesson
-            unit_title (str): Title of the unit the lesson belongs to
-            chat_history (list): List of previous messages in the format [{"role": "user"|"assistant", "content": "message"}]
-            user_question (str): The user's question
-            language (str): Language for the response
+        course_context = ""
+        if course_structure:
+            # Build a structured overview of the course
+            course_title = course_structure.get('course_title', 'this course')
+            units = course_structure.get('units', [])
             
-        Returns:
-            str: Formatted prompt for the AI tutor
-        """
-        # Format chat history
-        history_text = ""
-        if chat_history:
-            history_text = "\nPrevious conversation:\n"
-            for msg in chat_history[-5:]:  # Only include last 5 exchanges for context
-                role = "Student" if msg["role"] == "user" else "Tutor"
-                history_text += f"{role}: {msg['content']}\n"
+            # Find the current unit and its lessons
+            current_unit = None
+            for unit in units:
+                if unit.get('unit_title') == unit_title:
+                    current_unit = unit
+                    break
+            
+            # Build course context
+            course_context = f"## COURSE CONTEXT\n"
+            course_context += f"You are helping a student with the course: **{course_title}**\n\n"
+            
+            if current_unit:
+                lessons = current_unit.get('lessons', [])
+                current_lesson_index = next((i for i, l in enumerate(lessons) 
+                                          if l.get('lesson_title') == current_lesson_title), -1)
+                
+                course_context += f"### Current Unit: {unit_title}\n"
+                
+                # Show previous, current, and next lessons for context
+                if current_lesson_index >= 0:
+                    # Previous lessons
+                    if current_lesson_index > 0:
+                        prev_lesson = lessons[current_lesson_index - 1]
+                        course_context += f"- Previous lesson: {prev_lesson.get('lesson_title')}\n"
+                    
+                    # Current lesson
+                    course_context += f"- **Current lesson: {current_lesson_title}**\n"
+                    
+                    # Next lessons
+                    if current_lesson_index < len(lessons) - 1:
+                        next_lesson = lessons[current_lesson_index + 1]
+                        course_context += f"- Next lesson: {next_lesson.get('lesson_title')}\n"
+                
+                course_context += "\n"
+                
+                # Add learning progression tips
+                if current_lesson_index >= 0:
+                    course_context += "### Learning Progression Tips\n"
+                    if current_lesson_index > 0:
+                        course_context += "- Consider how this concept builds on previous lessons\n"
+                    if current_lesson_index < len(lessons) - 1:
+                        course_context += "- Consider how this concept will be used in future lessons\n"
+                    course_context += "- Maintain consistent terminology with the rest of the course\n"
+                    course_context += "- Align the difficulty level with the student's progress\n"
+            
+            course_context += "\n"
 
         return f"""
-        You are an AI tutor helping a student learn about {unit_title}.
+        You are a friendly and encouraging AI tutor named Quillio.
+        Your goal is to help a student understand the current lesson while being aware of their learning journey.
         
-        Here is the relevant lesson content:
-        --- LESSON CONTENT START ---
+        {course_context}
+        
+        ## CURRENT LESSON CONTEXT
+        - Unit: "{unit_title}"
+        - Lesson: "{current_lesson_title or 'Current Lesson'}"
+        
+        ## LESSON CONTENT
         {lesson_content}
-        --- LESSON CONTENT END ---
         
-        {history_text}
+        ## CONVERSATION HISTORY
+        {history_string}
         
-        Student's question: {user_question}
+        ## STUDENT'S QUESTION
+        "{user_question}"
         
-        Please provide a helpful, clear, and concise response to the student's question.
-        - If the question is off-topic, gently guide the conversation back to the lesson.
-        - If you don't know the answer, say so rather than making up information.
-        - Keep your response focused and educational.
-        - Respond in {language}.
-        """
+        ## INSTRUCTIONS
+        1. First, analyze the student's question to understand what they're asking.
+        2. If the question is related to the current lesson, provide a clear, concise answer.
+        3. If the question is about a different topic in the course, connect it to what they've learned.
+        4. If the question is off-topic, gently guide them back to the course material.
+        5. Reference relevant parts of the lesson content in your response.
+        6. Keep your response focused and educational.
+        7. Use simple, clear language appropriate for the student's level.
+        8. Respond in {language}.
+        
+        Now, provide a helpful response to the student's question.
+        """.strip()
 
 
 class CourseEditorPromptBuilder:
     @staticmethod
     def build_edit_prompt(current_course_json, user_request, language="english"):
-        """
-        Builds a prompt for editing an existing course structure.
-        
-        Args:
-            current_course_json (dict): Current course structure in JSON format
-            user_request (str): User's edit request/instructions
-            language (str): Language for the response
-            
-        Returns:
-            str: Formatted prompt for editing the course
-        """
+        # Check if this is a title update request
+        title_keywords = ["title", "name", "rename", "call this"]
+        is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
+
+        # If it's a title update, use the fast model for just the title
+        if is_title_update and "course_title" in current_course_json:
+            return {
+                "course_title": user_request,
+                "units": current_course_json.get("units", [])
+            }
+
+        course_str = json.dumps(current_course_json, indent=2)
+
         return f"""
-        You are an AI course editor. Your task is to modify the existing course structure based on the user's request.
-        
-        CURRENT COURSE STRUCTURE:
-        {json.dumps(current_course_json, indent=2)}
-        
-        USER REQUEST:
-        {user_request}
-        
-        INSTRUCTIONS:
-        1. Make the minimal necessary changes to satisfy the user's request
-        2. Maintain the existing structure and format
-        3. Keep all existing content unless explicitly asked to remove it
-        4. Ensure the course remains logically structured
-        5. If adding new content, make it consistent with the existing style
-        6. Return the complete updated course structure in valid JSON format
-        7. Respond in {language}
-        
-        Return ONLY the updated JSON structure, with no additional text or explanation.
+        You are an expert AI curriculum editor. Your task is to modify a course structure, which is provided as a JSON object.
+        The user will give you a command in plain text. You must interpret this command and apply it to the JSON structure.
+
+        IMPORTANT RULES:
+        1. Your entire response MUST be only the new, complete, and valid JSON object for the entire course.
+        2. Do NOT add any extra text, explanations, or markdown formatting around the JSON.
+        3. The structure of the JSON (keys like "course_title", "units", "lessons", "test") must be preserved.
+        4. If you add new lessons, ensure they have an "estimated_time_minutes" key.
+        5. All user-visible strings in the JSON (titles) must be in the following language: {language}.
+
+        Here is the current course structure:
+        {course_str}
+
+        Here is the user's request:
+        "{user_request}"
+
+        Now, return the complete, modified JSON object reflecting the user's request.
         """
-        
+
     @staticmethod
-    def build_title_improvement_prompt(user_request, language="english"):
-        """
-        Builds a prompt for improving or updating a course title based on user input.
-        
-        Args:
-            user_request (str): User's request for title change/improvement
-            language (str): Language for the response
-            
-        Returns:
-            str: Formatted prompt for generating an improved course title
-        """
-        return f"""
-        You are an AI course title generator. The user wants to update their course title.
-        
-        USER REQUEST:
-        {user_request}
-        
-        INSTRUCTIONS:
-        1. Generate a single, concise, and engaging course title based on the user's request
-        2. The title should be clear, informative, and appealing to potential students
-        3. Keep it under 60 characters if possible
-        4. Do not include any explanations, just return the title
-        5. Respond in {language}
-        
-        Return ONLY the new course title, with no additional text or quotation marks.
-        """
+    def build_title_improvement_prompt(current_title, language="english"):
+        """Generate a prompt to improve the course title."""
+        return f"Please make this name for a course more concise and engaging: {current_title}"
 
 
 class LessonPromptBuilder:
     @staticmethod
     def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None,
-                                    course_structure=None):
+                                    course_structure=None, current_lesson_index=None, total_lessons=None):
         user_context_string = ""
         if user_profile:
             profile_details = []
             if user_profile.get('age'):
                 profile_details.append(f"Age: {user_profile.get('age')}")
             if user_profile.get('bio'):
-                profile_details.append(f"Bio: '{user_profile.get('bio')}'")
+                profile_details.append(f"Bio: '{user_profile.get('bio')}'")  # noqa: B907
             if profile_details:
                 user_context_string = f"- Personalize the tone, examples, and analogies for the user. User profile: {'; '.join(profile_details)}. For instance, if their bio mentions programming, use technical analogies."
 
         course_context_string = ""
         if course_structure:
+            # Extract relevant course structure information
+            course_title = course_structure.get('course_title', '')
+            units = course_structure.get('units', [])
+            
+            # Build course structure context
+            course_overview = f"Course: {course_title}\n\n"
+            
+            for unit in units:
+                unit_title_display = unit.get('unit_title', 'Untitled Unit')
+                course_overview += f"- {unit_title_display}\n"
+                
+                lessons = unit.get('lessons', [])
+                for i, lesson in enumerate(lessons, 1):
+                    lesson_title_display = lesson.get('lesson_title', 'Untitled Lesson')
+                    is_current = (lesson_title_display == lesson_title and unit_title_display == unit_title)
+                    prefix = "→ " if is_current else "  "
+                    course_overview += f"  {prefix}Lesson {i}: {lesson_title_display}\n"
+            
+            # Add learning progression context
+            progression_context = ""
+            if current_lesson_index is not None and total_lessons:
+                progression_context = (
+                    f"This is lesson {current_lesson_index} of {total_lessons} in the course. "
+                    f"You are {int((current_lesson_index/total_lessons)*100)}% through the course.\n\n"
+                )
+            
             course_context_string = f"""
-            For context, here is the full structure of the course this lesson is a part of. This can help you reference other lessons if needed.
-            --- COURSE STRUCTURE START ---
-            {json.dumps(course_structure, indent=2)}
-            --- COURSE STRUCTURE END ---
-            """
+            ## COURSE CONTEXT
+            {progression_context}
+            This lesson is part of the following course structure:
+            ```
+            {course_overview}
+            ```
+            
+            When creating this lesson, please:
+            1. Reference and build upon concepts from previous lessons when appropriate
+            2. Set up concepts that will be explored in future lessons
+            3. Maintain consistent terminology and difficulty level throughout the course
+            4. Ensure the content fits within the overall learning progression
+            """.format(progression_context=progression_context, course_overview=course_overview)
 
         return f"""
-            You are an expert AI tutor.
+            You are an expert AI tutor creating a lesson for an online learning platform.
 
-            Generate a comprehensive, structured, and beginner-friendly lesson on the topic: "{lesson_title}".
-            This lesson is part of the unit: "{unit_title}".
+            ## TASK
+            Generate a comprehensive, structured, and beginner-friendly lesson on the topic: "{lesson_title}"
+            This lesson is part of the unit: "{unit_title}"
             The entire lesson content MUST be in {language}.
+            
             {course_context_string}
-
-            Guidelines:
-            - Use clear Markdown formatting (## Headings, bullet points, code blocks if needed).
+            
+            ## GUIDELINES
+            - Use clear Markdown formatting (## Headers, bullet points, code blocks if needed).
             - Include step-by-step explanations, illustrative examples, and analogies.
-            - The lesson's length MUST be calibrated for a {lesson_duration}-minute completion time for an average student. A shorter duration means a more concise, high-level overview. A longer duration allows for more depth, detail, and examples.
+            - The lesson's length MUST be calibrated for a {lesson_duration}-minute completion time.
             - Use concise, easy-to-understand language for learners at various levels.
-            {user_context_string}"""+"""
+            {user_context_string}
 
             Mathematical Formulas:
             - For inline mathematical expressions, wrap them in single dollar signs, like `$\frac{1}{2}$`.
-            - For display-style equations (on their own line), wrap them in double dollar signs, like `$$\sum_{i=1}^{n} i = \frac{n(n + 1)}{2}$$`.
+            - For display-style equations (on their own line), wrap them in double dollar signs, like `$$\sum_{{i=1}}^{{n}} i = \frac{{n(n + 1)}}{{2}}$$`.
             - Use standard LaTeX syntax for all mathematical formulas.
 
             Visual Aids:
@@ -370,74 +433,4 @@ class LessonPromptBuilder:
             IMPORTANT: Do NOT include any text in the images themselves, as the AI image generator struggles with rendering text in images. I want the images to be a grayscale, schematic diagram.
 
             The lesson should be clear, logically organized, and visually supported where appropriate.
-        """
-
-        class ChatPromptBuilder:
-            @staticmethod
-            def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
-                # Format the chat history for the prompt
-                history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
-
-                return f"""
-            You are a friendly and encouraging AI tutor named Quillio.
-            Your goal is to help a student understand a specific lesson. You have perfect knowledge of the lesson content provided below.
-            You must only answer questions related to the lesson's topic. If asked about something unrelated, politely steer the conversation back to the lesson.
-            Keep your answers concise and easy to understand.
-            Your entire response MUST be in the following language: {language}.
-
-            CONTEXT:
-            - The student is studying the unit: "{unit_title}"
-            - The student is viewing a lesson with the following content (this is the ground truth):
-            --- LESSON CONTENT START ---
-            {lesson_content}
-            --- LESSON CONTENT END ---
-
-            - Here is the conversation so far:
-            --- CHAT HISTORY START ---
-            {history_string}
-            --- CHAT HISTORY END ---
-
-            Now, answer the student's latest question based on the provided lesson content (no markdown please).
-            Student's Question: "{user_question}"
-        """
-
-        class CourseEditorPromptBuilder:
-            @staticmethod
-            def build_title_improvement_prompt(current_title, language="english"):
-                """Generate a prompt to improve the course title."""
-                return f"Please make this name for a course more concise and engaging: {current_title}"
-
-            @staticmethod
-            def build_edit_prompt(current_course_json, user_request, language="english"):
-                # Check if this is a title update request
-                title_keywords = ["title", "name", "rename", "call this"]
-                is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
-
-                # If it's a title update, use the fast model for just the title
-                if is_title_update and "course_title" in current_course_json:
-                    return {
-                        "course_title": user_request,
-                        "units": current_course_json.get("units", [])
-                    }
-
-                course_str = json.dumps(current_course_json, indent=2)
-
-                return f"""
-            You are an expert AI curriculum editor. Your task is to modify a course structure, which is provided as a JSON object.
-            The user will give you a command in plain text. You must interpret this command and apply it to the JSON structure.
-
-            IMPORTANT RULES:
-            1. Your entire response MUST be only the new, complete, and valid JSON object for the entire course.
-            2. Do NOT add any extra text, explanations, or markdown formatting around the JSON.
-            3. The structure of the JSON (keys like "course_title", "units", "lessons", "test") must be preserved.
-            4. If you add new lessons, ensure they have an "estimated_time_minutes" key.
-            5. All user-visible strings in the JSON (titles) must be in the following language: {language}.
-
-            Here is the current course structure:
-            {course_str}
-
-            Here is the user's request:
-            "{user_request}"
-
-            Now, return the complete, modified JSON object reflecting the user's request.
         """
