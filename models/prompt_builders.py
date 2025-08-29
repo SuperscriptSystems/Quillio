@@ -3,7 +3,8 @@ import json
 
 class TestPromptBuilder:
     @staticmethod
-    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5, user_profile=None, lesson_content_context=""):
+    def build_multiple_choice_prompt(topic, additional_context="", language="english", number_of_questions=5,
+                                     user_profile=None, lesson_content_context=""):
         user_context_string = ""
         if user_profile:
             if user_profile.get('age'):
@@ -11,7 +12,7 @@ class TestPromptBuilder:
             if user_profile.get('bio'):
                 user_context_string += f" The user's bio: '{user_profile.get('bio')}'."
             if user_context_string:
-                 user_context_string = f"Consider the following user profile when creating questions:{user_context_string}"
+                user_context_string = f"Consider the following user profile when creating questions:{user_context_string}"
 
         lesson_context_string = ""
         if lesson_content_context:
@@ -29,7 +30,7 @@ class TestPromptBuilder:
             {lesson_context_string}
 
             Create {number_of_questions} multiple choice questions.
-            
+
             IMPORTANT CONSTRAINTS:
             - Each question must have EXACTLY ONE correct answer
             - Do NOT create questions where multiple options are correct (e.g., "Which of the following are true: 1,2,4")
@@ -149,7 +150,8 @@ class AnswerPromptBuilder:
 
 class CoursePromptBuilder:
     @staticmethod
-    def build_course_structure_prompt(topic, knowledge_assessment, assessed_answers, language="english", lesson_duration=15, user_profile=None):
+    def build_course_structure_prompt(topic, knowledge_assessment, assessed_answers, language="english",
+                                      lesson_duration=15, user_profile=None):
         assessed_answers_string = "\n".join([
             f"Q: {item['question']}\nA: {item['answer']}\nAssessment: {item['assessment']}\n"
             for item in assessed_answers
@@ -164,7 +166,6 @@ class CoursePromptBuilder:
                 profile_details.append(f"Bio: '{user_profile.get('bio')}'")
             if profile_details:
                 user_context_string = f"- Personalize the course for the following user profile: {'; '.join(profile_details)}."
-
 
         return f"""
             A learner has completed a test on the topic: "{topic}".
@@ -207,9 +208,118 @@ class CoursePromptBuilder:
         """
 
 
+class ChatPromptBuilder:
+    @staticmethod
+    def build_chat_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
+        """
+        Builds a prompt for the AI tutor to respond to user questions in the context of a lesson.
+        
+        Args:
+            lesson_content (str): The content of the current lesson
+            unit_title (str): Title of the unit the lesson belongs to
+            chat_history (list): List of previous messages in the format [{"role": "user"|"assistant", "content": "message"}]
+            user_question (str): The user's question
+            language (str): Language for the response
+            
+        Returns:
+            str: Formatted prompt for the AI tutor
+        """
+        # Format chat history
+        history_text = ""
+        if chat_history:
+            history_text = "\nPrevious conversation:\n"
+            for msg in chat_history[-5:]:  # Only include last 5 exchanges for context
+                role = "Student" if msg["role"] == "user" else "Tutor"
+                history_text += f"{role}: {msg['content']}\n"
+
+        return f"""
+        You are an AI tutor helping a student learn about {unit_title}.
+        
+        Here is the relevant lesson content:
+        --- LESSON CONTENT START ---
+        {lesson_content}
+        --- LESSON CONTENT END ---
+        
+        {history_text}
+        
+        Student's question: {user_question}
+        
+        Please provide a helpful, clear, and concise response to the student's question.
+        - If the question is off-topic, gently guide the conversation back to the lesson.
+        - If you don't know the answer, say so rather than making up information.
+        - Keep your response focused and educational.
+        - Respond in {language}.
+        """
+
+
+class CourseEditorPromptBuilder:
+    @staticmethod
+    def build_edit_prompt(current_course_json, user_request, language="english"):
+        """
+        Builds a prompt for editing an existing course structure.
+        
+        Args:
+            current_course_json (dict): Current course structure in JSON format
+            user_request (str): User's edit request/instructions
+            language (str): Language for the response
+            
+        Returns:
+            str: Formatted prompt for editing the course
+        """
+        return f"""
+        You are an AI course editor. Your task is to modify the existing course structure based on the user's request.
+        
+        CURRENT COURSE STRUCTURE:
+        {json.dumps(current_course_json, indent=2)}
+        
+        USER REQUEST:
+        {user_request}
+        
+        INSTRUCTIONS:
+        1. Make the minimal necessary changes to satisfy the user's request
+        2. Maintain the existing structure and format
+        3. Keep all existing content unless explicitly asked to remove it
+        4. Ensure the course remains logically structured
+        5. If adding new content, make it consistent with the existing style
+        6. Return the complete updated course structure in valid JSON format
+        7. Respond in {language}
+        
+        Return ONLY the updated JSON structure, with no additional text or explanation.
+        """
+        
+    @staticmethod
+    def build_title_improvement_prompt(user_request, language="english"):
+        """
+        Builds a prompt for improving or updating a course title based on user input.
+        
+        Args:
+            user_request (str): User's request for title change/improvement
+            language (str): Language for the response
+            
+        Returns:
+            str: Formatted prompt for generating an improved course title
+        """
+        return f"""
+        You are an AI course title generator. The user wants to update their course title.
+        
+        USER REQUEST:
+        {user_request}
+        
+        INSTRUCTIONS:
+        1. Generate a single, concise, and engaging course title based on the user's request
+        2. The title should be clear, informative, and appealing to potential students
+        3. Keep it under 60 characters if possible
+        4. Do not include any explanations, just return the title
+        5. Respond in {language}
+        
+        Return ONLY the new course title, with no additional text or quotation marks.
+        """
+
+
 class LessonPromptBuilder:
     @staticmethod
-    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None, course_structure=None):
+    def build_lesson_content_prompt(lesson_title, unit_title, language="english", lesson_duration=15, user_profile=None,
+                                    course_structure=None):
         user_context_string = ""
         if user_profile:
             profile_details = []
@@ -242,7 +352,12 @@ class LessonPromptBuilder:
             - Include step-by-step explanations, illustrative examples, and analogies.
             - The lesson's length MUST be calibrated for a {lesson_duration}-minute completion time for an average student. A shorter duration means a more concise, high-level overview. A longer duration allows for more depth, detail, and examples.
             - Use concise, easy-to-understand language for learners at various levels.
-            {user_context_string}
+            {user_context_string}"""+"""
+
+            Mathematical Formulas:
+            - For inline mathematical expressions, wrap them in single dollar signs, like `$\frac{1}{2}$`.
+            - For display-style equations (on their own line), wrap them in double dollar signs, like `$$\sum_{i=1}^{n} i = \frac{n(n + 1)}{2}$$`.
+            - Use standard LaTeX syntax for all mathematical formulas.
 
             Visual Aids:
             - Insert AI image placeholders only when the visual would enhance understanding.
@@ -257,13 +372,13 @@ class LessonPromptBuilder:
             The lesson should be clear, logically organized, and visually supported where appropriate.
         """
 
-class ChatPromptBuilder:
-    @staticmethod
-    def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
-        # Format the chat history for the prompt
-        history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
+        class ChatPromptBuilder:
+            @staticmethod
+            def build_tutor_prompt(lesson_content, unit_title, chat_history, user_question, language="english"):
+                # Format the chat history for the prompt
+                history_string = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
 
-        return f"""
+                return f"""
             You are a friendly and encouraging AI tutor named Quillio.
             Your goal is to help a student understand a specific lesson. You have perfect knowledge of the lesson content provided below.
             You must only answer questions related to the lesson's topic. If asked about something unrelated, politely steer the conversation back to the lesson.
@@ -286,30 +401,28 @@ class ChatPromptBuilder:
             Student's Question: "{user_question}"
         """
 
+        class CourseEditorPromptBuilder:
+            @staticmethod
+            def build_title_improvement_prompt(current_title, language="english"):
+                """Generate a prompt to improve the course title."""
+                return f"Please make this name for a course more concise and engaging: {current_title}"
 
-class CourseEditorPromptBuilder:
-    @staticmethod
-    def build_title_improvement_prompt(current_title, language="english"):
-        """Generate a prompt to improve the course title."""
-        return f"Please make this name for a course more concise and engaging: {current_title}"
+            @staticmethod
+            def build_edit_prompt(current_course_json, user_request, language="english"):
+                # Check if this is a title update request
+                title_keywords = ["title", "name", "rename", "call this"]
+                is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
 
-    @staticmethod
-    def build_edit_prompt(current_course_json, user_request, language="english"):
-        # Check if this is a title update request
-        title_keywords = ["title", "name", "rename", "call this"]
-        is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
-        
-        # If it's a title update, use the fast model for just the title
-        if is_title_update and "course_title" in current_course_json:
-            return {
-                "course_title": user_request,  # Will be replaced by AI in the service
-                "units": current_course_json.get("units", [])
-            }
-            
-        # For other edits, use the full course structure
-        course_str = json.dumps(current_course_json, indent=2)
+                # If it's a title update, use the fast model for just the title
+                if is_title_update and "course_title" in current_course_json:
+                    return {
+                        "course_title": user_request,
+                        "units": current_course_json.get("units", [])
+                    }
 
-        return f"""
+                course_str = json.dumps(current_course_json, indent=2)
+
+                return f"""
             You are an expert AI curriculum editor. Your task is to modify a course structure, which is provided as a JSON object.
             The user will give you a command in plain text. You must interpret this command and apply it to the JSON structure.
 
