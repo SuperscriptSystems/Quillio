@@ -23,15 +23,16 @@ COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appuser . .
+
+# Ensure line endings are correct and make script executable
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh
 
 # Set environment variables
 ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
-
-# Make sure the entrypoint script is executable
-RUN chmod +x /app/docker-entrypoint.sh
 
 # Use a non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
