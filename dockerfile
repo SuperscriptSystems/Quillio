@@ -17,7 +17,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy Python dependencies from builder
-# COPY --from=builder /root/.local /root/.local
+COPY --from=builder /root/.local /root/.local
 
 # Ensure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
@@ -36,12 +36,6 @@ ENV PYTHONPATH=/app
 
 # Use a non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
-
-# after you create appuser and before USER appuser:
-COPY --from=builder /root/.local /home/appuser/.local
-ENV PATH="/home/appuser/.local/bin:${PATH}"
-RUN chown -R appuser:appuser /home/appuser/.local
-
 USER appuser
 
 # Expose the port the app runs on
