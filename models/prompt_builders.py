@@ -340,7 +340,22 @@ class CourseEditorPromptBuilder:
     @staticmethod
     def build_title_improvement_prompt(current_title, language="english"):
         """Generate a prompt to improve the course title."""
-        return f"Please make this name for a course more concise and engaging: {current_title}"
+        return f"""
+        You are an expert at creating engaging and concise course titles. 
+        
+        Your task is to take the current course title and improve it to be more engaging and concise.
+        
+        Current title: "{current_title}"
+        
+        RULES:
+        1. Respond with ONLY the improved title, nothing else
+        2. Keep it under 10 words
+        3. Make it engaging and professional
+        4. Do not use markdown, quotes, or any formatting
+        5. Do not include any explanations or additional text
+        6. The title should be in {language}
+        
+        Improved title: """
 
 
 class LessonPromptBuilder:

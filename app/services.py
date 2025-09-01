@@ -5,7 +5,7 @@ import markdown
 from flask import url_for
 from flask_login import current_user
 from flask import session
-from app.ai_clients import ask_openai, ask_gemini, ask_gemini_stream, ask_openai_stream
+from app.ai_clients import ask_ai, ask_ai_stream, ask_gemini, ask_gemini_stream
 from models.prompt_builders import TestPromptBuilder, AnswerPromptBuilder, CoursePromptBuilder, LessonPromptBuilder, \
     ChatPromptBuilder, CourseEditorPromptBuilder
 from models.json_extractor import JsonExtractor
@@ -81,7 +81,7 @@ def generate_knowledge_assessment_service(detailed_results):
     prompt = "Provide a concise, one or two paragraph assessment of the user's knowledge of the topic based on the test results below. Do not address the user directly; use third-person phrasing (e.g., 'users responses indicate...'). Do not use markdown.\n\n"
     for result in detailed_results:
         prompt += f"Q: {result['question']}\nA: {result['answer']}\nAssessment: {result['assessment']}\n\n"
-    assessment_text, tokens = ask_openai(prompt, model="gpt-4o-mini", json_mode=False)
+    assessment_text, tokens = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
     _update_token_count(tokens)
 
     return assessment_text if assessment_text and "Error:" not in assessment_text else "Could not generate assessment."
@@ -91,7 +91,7 @@ def create_course_service(user, topic, knowledge_assessment, assessed_answers):
     """Creates a course structure using OpenAI and updates token count."""
     prompt = CoursePromptBuilder.build_course_structure_prompt(
         topic, knowledge_assessment, assessed_answers, user.language, user)
-    raw_output, tokens = ask_openai(prompt, json_mode=True)
+    raw_output, tokens = ask_ai(prompt, json_mode=True)
     _update_token_count(tokens)
 
     if not raw_output or "Error:" in raw_output:
@@ -144,7 +144,7 @@ def generate_lesson_content_service(lesson, user):
 
     def content_generator():
         # Using ask_openai_stream
-        response_stream = ask_openai_stream(prompt, model="gpt-4o")
+        response_stream = ask_ai_stream(prompt, model="gpt-4o")
 
         full_markdown_chunks = []
         for chunk in response_stream:
@@ -183,7 +183,7 @@ def generate_improved_course_name(original_name):
     # Try Gemini first, fall back to OpenAI if needed
     improved_name, tokens = ask_gemini(prompt)
     if not improved_name or "Error:" in improved_name:
-        improved_name, tokens = ask_openai(prompt)
+        improved_name, tokens = ask_ai(prompt)
         
     _update_token_count(tokens)
     
@@ -246,21 +246,25 @@ def get_tutor_response_service(lesson, chat_history, user_question, user):
 
 def edit_course_service(course, user_request, language):
     """Uses an AI to edit the course structure and syncs the database."""
+    print(f"[DEBUG] edit_course_service called with request: {user_request}")
+    
     # Check if this is a title update request
     title_keywords = ["title", "name", "rename", "call this"]
     is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
     
     if is_title_update and "course_title" in course.course_data:
+        print("[DEBUG] Processing title update request")
         # For title updates, use a fast model to generate an improved title
         prompt = CourseEditorPromptBuilder.build_title_improvement_prompt(
             user_request, language
         )
-        new_title, tokens = ask_openai(prompt, model="gpt-4o-mini", json_mode=False)
+        new_title, tokens = ask_ai(prompt, model="gpt-4o-mini", json_mode=False)
         _update_token_count(tokens)
         
         if new_title and "Error:" not in new_title:
             # Clean up the title (remove quotes, extra spaces, etc.)
-            new_title = new_title.strip('"\' ')
+            new_title = new_title.strip('\'" ')
+            print(f"[DEBUG] Generated new title: {new_title}")
             # Update the course data with the new title
             course_data = course.course_data
             course_data["course_title"] = new_title
@@ -268,57 +272,81 @@ def edit_course_service(course, user_request, language):
             db.session.commit()
             return course_data, None
         else:
-            return None, "Failed to generate an improved title."
+            error_msg = f"Failed to generate an improved title. Response: {new_title}"
+            print(f"[ERROR] {error_msg}")
+            return None, error_msg
     
+    print("[DEBUG] Processing full course edit request")
     # For non-title updates, use the full course editor
     prompt = CourseEditorPromptBuilder.build_edit_prompt(course.course_data, user_request, language)
-    new_course_str, tokens = ask_openai(prompt, model="gpt-4o", json_mode=True)
+    new_course_str, tokens = ask_ai(prompt, model="gpt-4o", json_mode=True)
     _update_token_count(tokens)
 
     if not new_course_str or "Error:" in new_course_str:
-        return None, "AI failed to generate a new course structure."
+        error_msg = f"AI failed to generate a new course structure. Response: {new_course_str}"
+        print(f"[ERROR] {error_msg}")
+        return None, error_msg
 
     try:
+        print("[DEBUG] Parsing AI response")
         new_course_json = JsonExtractor.extract_json(new_course_str)
         if 'course_title' not in new_course_json or 'units' not in new_course_json:
-            raise ValueError("Invalid JSON structure returned by AI.")
+            error_msg = f"Invalid JSON structure returned by AI: {new_course_json}"
+            print(f"[ERROR] {error_msg}")
+            raise ValueError(error_msg)
     except Exception as e:
-        print(f"Error parsing new course structure: {e}")
-        return None, "AI returned an invalid course format."
+        error_msg = f"Error parsing new course structure: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        return None, error_msg
 
-    # --- Sync Database with new structure ---
-    # 1. Update the main course data
-    course.course_data = new_course_json
+    try:
+        print("[DEBUG] Updating database with new course structure")
+        # --- Sync Database with new structure ---
+        # 1. Update the main course data
+        course.course_data = new_course_json
 
-    # 2. Get a set of all lesson titles from the new JSON
-    new_lesson_titles = set()
-    for unit in new_course_json.get('units', []):
-        for lesson_data in unit.get('lessons', []):
-            new_lesson_titles.add(lesson_data.get('lesson_title'))
+        # 2. Get a set of all lesson titles from the new JSON
+        new_lesson_titles = set()
+        for unit in new_course_json.get('units', []):
+            for lesson_data in unit.get('lessons', []):
+                if 'lesson_title' in lesson_data:
+                    new_lesson_titles.add(lesson_data['lesson_title'])
+                else:
+                    print(f"[WARNING] Missing 'lesson_title' in lesson data: {lesson_data}")
 
-    # 3. Get all existing Lesson objects for this course
-    existing_lessons = Lesson.query.filter_by(course_id=course.id).all()
-    existing_lesson_titles = {lesson.lesson_title: lesson for lesson in existing_lessons}
+        # 3. Get all existing Lesson objects for this course
+        existing_lessons = Lesson.query.filter_by(course_id=course.id).all()
+        existing_lesson_titles = {lesson.lesson_title: lesson for lesson in existing_lessons}
 
-    # 4. Delete lessons that are no longer in the new structure
-    for title, lesson_obj in existing_lesson_titles.items():
-        if title not in new_lesson_titles:
-            db.session.delete(lesson_obj)
+        # 4. Delete lessons that are no longer in the new structure
+        for title, lesson_obj in existing_lesson_titles.items():
+            if title not in new_lesson_titles:
+                print(f"[DEBUG] Deleting lesson: {title}")
+                db.session.delete(lesson_obj)
 
-    # 5. Add lessons that are new
-    for unit in new_course_json.get('units', []):
-        for lesson_data in unit.get('lessons', []):
-            title = lesson_data.get('lesson_title')
-            if title and title not in existing_lesson_titles:
-                new_lesson = Lesson(
-                    course_id=course.id,
-                    unit_title=unit.get('unit_title'),
-                    lesson_title=title
-                )
-                db.session.add(new_lesson)
+        # 5. Add lessons that are new
+        for unit in new_course_json.get('units', []):
+            for lesson_data in unit.get('lessons', []):
+                title = lesson_data.get('lesson_title')
+                if title and title not in existing_lesson_titles:
+                    print(f"[DEBUG] Adding new lesson: {title}")
+                    new_lesson = Lesson(
+                        course_id=course.id,
+                        unit_title=unit.get('unit_title'),
+                        lesson_title=title
+                    )
+                    db.session.add(new_lesson)
 
-    # Recalculate completed lessons count
-    course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
-    db.session.commit()
-
-    return new_course_json, None
+        # Recalculate completed lessons count
+        course.completed_lessons = Lesson.query.filter_by(course_id=course.id, is_completed=True).count()
+        db.session.commit()
+        print("[DEBUG] Course update completed successfully")
+        return new_course_json, None
+        
+    except Exception as e:
+        db.session.rollback()
+        error_msg = f"Database error during course update: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return None, error_msg
