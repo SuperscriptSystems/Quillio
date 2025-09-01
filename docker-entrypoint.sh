@@ -5,7 +5,7 @@ set -e
 export FLASK_APP=${FLASK_APP:-run.py}
 
 echo "Running database migrations..."
-flask db upgrade
+python -m flask db upgrade
 
 echo "Starting Gunicorn..."
 exec gunicorn run:app --workers ${GUNICORN_WORKERS:-3} --bind 0.0.0.0:8000
