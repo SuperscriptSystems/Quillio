@@ -18,14 +18,13 @@ def send_verification_email(user):
         # Gmail SMTP configuration
         port = 465  # For SSL
         smtp_server = "smtp.gmail.com"
-        sender_email = "alex@shmulevich.com"
-        app_password = os.environ.get("GMAIL_APP_PASSWORD")
+        sender_email = os.environ.get("MAIL_USERNAME")
+        app_password = os.environ.get("MAIL_PASSWORD")
         
         # For development/testing - if email is not configured, just log the code
         if not sender_email or not app_password:
             logging.warning(f"Gmail credentials not configured. Verification code for {user.email}: {verification_code}")
             print(f"DEVELOPMENT MODE - Verification code for {user.email}: {verification_code}")
-            print("To enable email sending, set GMAIL_USERNAME and GMAIL_APP_PASSWORD environment variables")
             return True
         
         # Always show backup code
