@@ -34,10 +34,6 @@ ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
 
-# Use a non-root user for security
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
-
 # Expose the port the app runs on
 EXPOSE 8000
 
