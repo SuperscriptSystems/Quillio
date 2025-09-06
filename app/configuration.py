@@ -13,7 +13,7 @@ env_path = Path('..') / '.env'
 load_dotenv(env_path)
 
 # --- App Initialization and Configuration ---
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, template_folder='../templates', static_folder="../static")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('CONNECTION_STRING')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

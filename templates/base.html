@@ -102,9 +102,11 @@
 <body>
     {% if current_user.is_authenticated %}
     <nav class="top-nav">
-        <div class="logo">
-            <a href="{{ url_for('course_dashboard') }}">🧠 Quillio</a>
-        </div>
+<div class="logo">
+    <a href="{{ url_for('course_dashboard') }}">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Quillio Logo" style="height:50px; vertical-align:middle;">
+    </a>
+</div>
         <div class="nav-links">
             <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.email }}{% else %}Welcome, {{ current_user.email }}{% endif %}</span>
             <a href="{{ url_for('course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
@@ -115,7 +117,6 @@
     {% endif %}
 
     <main class="page-content">
-        <!-- MODIFIED FLASH MESSAGE BLOCK -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
