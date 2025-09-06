@@ -1,4 +1,4 @@
-FROM python:3.11-slim as builder
+FROM python:3.13-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,22 +8,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install Python dependencies
-COPY requirements.txt .
-RUN pip install --user -r requirements.txt
+RUN pip install poetry
+RUN poetry config virtualenvs.create false
+COPY pyproject.toml poetry.lock* ./
+RUN poetry install --only=main --no-interaction --no-ansi --no-root
 
-# Final stage
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /root/.local
-
-# Ensure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy application code
-COPY --chown=appuser:appuser . .
+COPY . .
 
 # Ensure line endings are correct and make script executable
 RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
@@ -33,10 +25,6 @@ RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
 ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
-
-# Use a non-root user for security
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
 
 # Expose the port the app runs on
 EXPOSE 8000
