@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>{% block title %}Quillio{% endblock %}</title>
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <meta name="theme-color" content="#2A3F4A">
+
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -41,7 +46,6 @@
             padding: 40px 20px;
         }
 
-        /* --- NEW THOUGHT BUBBLE STYLES --- */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -57,23 +61,21 @@
             position: relative;
             max-width: 500px;
             padding: 18px 25px;
-            border-radius: 25px; /* Softer, more circular radius */
+            border-radius: 25px;
             color: #fff;
             text-align: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             animation: fadeIn 0.4s ease-out forwards;
         }
 
-        /* The smaller bubbles that form the tail */
         .flash-message::before,
         .flash-message::after {
             content: '';
             position: absolute;
             border-radius: 50%;
-            background-color: inherit; /* They inherit the color of the main bubble */
+            background-color: inherit;
         }
 
-        /* Middle bubble */
         .flash-message::before {
             width: 25px;
             height: 25px;
@@ -82,7 +84,6 @@
             transform: translateX(-120%);
         }
 
-        /* Smallest bubble */
         .flash-message::after {
             width: 15px;
             height: 15px;
@@ -91,7 +92,6 @@
             transform: translateX(-150%);
         }
 
-        /* Applying the main colors */
         .success { background-color: #5cb85c; }
         .danger { background-color: #d9534f; }
         .warning { background-color: #f0ad4e; }
@@ -102,11 +102,11 @@
 <body>
     {% if current_user.is_authenticated %}
     <nav class="top-nav">
-<div class="logo">
-    <a href="{{ url_for('course_dashboard') }}">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Quillio Logo" style="height:50px; vertical-align:middle;">
-    </a>
-</div>
+        <div class="logo">
+            <a href="{{ url_for('course_dashboard') }}">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Quillio Logo" style="height:50px; vertical-align:middle;">
+            </a>
+        </div>
         <div class="nav-links">
             <span>{% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.email }}{% else %}Welcome, {{ current_user.email }}{% endif %}</span>
             <a href="{{ url_for('course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
@@ -128,8 +128,6 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <!-- END MODIFIED BLOCK -->
-
         {% block content %}{% endblock %}
     </main>
 
