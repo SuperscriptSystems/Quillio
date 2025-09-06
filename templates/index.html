@@ -4,6 +4,8 @@
 
 {% block content %}
 {% set lang = current_user.language %}
+      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <style>
   .container { background: #344955; border-radius: 12px; padding: 30px; max-width: 600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: fadeIn 1s ease-in-out; }
   h1, h2 { text-align: center; font-weight: 700; color: #F0F0F0; }

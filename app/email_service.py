@@ -1,12 +1,14 @@
-from flask import url_for, render_template_string
+from flask import url_for, render_template_string, current_app
 from app.configuration import app
 import smtplib
 import ssl
 import os
 import logging
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def send_verification_email(user):
-    """Send email verification email using Gmail SMTP with App Password"""
+    """Send email verification email using SMTP with App Password"""
     try:
         # Use existing verification code (should already be generated)
         verification_code = user.verification_token
@@ -15,118 +17,88 @@ def send_verification_email(user):
             logging.error(f"No verification code found for user {user.email}")
             return False
         
-        # Gmail SMTP configuration
-        port = 465  # For SSL
-        smtp_server = "smtp.gmail.com"
-        sender_email = os.environ.get("MAIL_USERNAME")
-        app_password = os.environ.get("MAIL_PASSWORD")
+        # Get SMTP configuration from environment variables
+        smtp_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+        port = int(os.getenv('MAIL_PORT', 587))
+        sender_email = os.getenv('MAIL_USERNAME')
+        app_password = os.getenv('MAIL_PASSWORD')
         
-        # For development/testing - if email is not configured, just log the code
-        if not sender_email or not app_password:
-            logging.warning(f"Gmail credentials not configured. Verification code for {user.email}: {verification_code}")
-            print(f"DEVELOPMENT MODE - Verification code for {user.email}: {verification_code}")
-            return True
+        if not all([smtp_server, sender_email, app_password]):
+            logging.warning("Email configuration is incomplete. Please check your environment variables.")
+            return False
         
-        # Always show backup code
-        print(f"BACKUP CODE - Verification code for {user.email}: {verification_code}")
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Verify Your Quillio Account"
+        msg['From'] = sender_email
+        msg['To'] = user.email
         
-        # Create HTML email message
-        html_body = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Verify Your Email - Quillio</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f8f9fa; }}
-        .verification-code {{ 
-            display: inline-block; 
-            padding: 20px 30px; 
-            background-color: #007bff; 
-            color: white; 
-            font-size: 32px; 
-            font-weight: bold; 
-            letter-spacing: 8px; 
-            border-radius: 8px; 
-            margin: 20px 0; 
-            font-family: 'Courier New', monospace;
-        }}
-        .code-container {{ text-align: center; margin: 30px 0; }}
-        .footer {{ padding: 20px; text-align: center; color: #666; font-size: 12px; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Welcome to Quillio!</h1>
-        </div>
-        <div class="content">
-            <h2>Verify Your Email Address</h2>
-            <p>Hi {user.full_name or user.email},</p>
-            <p>Thank you for registering with Quillio! To complete your registration and start creating personalized courses, please enter the following verification code:</p>
-            
-            <div class="code-container">
-                <div class="verification-code">{verification_code}</div>
+        # Email content
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Verify Your Email - Quillio</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; }}
+                .content {{ padding: 20px; background-color: #f8f9fa; }}
+                .verification-code {{ 
+                    display: inline-block; 
+                    padding: 20px 30px; 
+                    background-color: #007bff; 
+                    color: white; 
+                    font-size: 24px; 
+                    font-weight: bold; 
+                    margin: 20px 0;
+                    border-radius: 5px;
+                }}
+                .footer {{ margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Welcome to Quillio!</h1>
+                </div>
+                <div class="content">
+                    <p>Thank you for registering. Please use the following verification code to verify your email address:</p>
+                    <div class="verification-code">{verification_code}</div>
+                    <p>This code will expire in 24 hours.</p>
+                    <p>If you didn't create an account with Quillio, please ignore this email.</p>
+                </div>
+                <div class="footer">
+                    <p> 2025 Quillio. All rights reserved.</p>
+                    <p>This is an automated email. Please do not reply to this message.</p>
+                </div>
             </div>
-            
-            <p style="text-align: center; font-size: 18px; margin: 20px 0;">
-                <strong>Your verification code: {verification_code}</strong>
-            </p>
-            
-            <p><strong>This verification code will expire in 24 hours.</strong></p>
-            <p>If you didn't create an account with Quillio, please ignore this email.</p>
-        </div>
-        <div class="footer">
-            <p>© 2025 Quillio. All rights reserved.</p>
-            <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
-    </div>
-</body>
-</html>"""
+        </body>
+        </html>
+        """
         
-        # Create email message
-        message = f"""From: Quillio <{sender_email}>
-To: {user.email}
-Subject: Verify Your Email - Quillio
-MIME-Version: 1.0
-Content-Type: text/html; charset=utf-8
-
-{html_body}"""
+        # Attach both HTML and plain text versions
+        part1 = MIMEText(f"Your verification code is: {verification_code}", 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
         
-        # Send email using Gmail SMTP
-        try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-                server.login(sender_email, app_password)
-                server.sendmail(sender_email, user.email, message.encode('utf-8'))
-                logging.info(f"Verification email sent successfully to {user.email}")
-                print(f"[SUCCESS] Email sent successfully to {user.email}!")
-                return True
-                
-        except smtplib.SMTPAuthenticationError as e:
-            logging.error(f"Gmail authentication failed for {user.email}: {str(e)}")
-            print(f"[ERROR] Authentication failed - Gmail rejected the App Password")
-            print(f"Details: {e}")
-            print("\nTroubleshooting:")
-            print("1. Verify 2-Factor Authentication is enabled on your Gmail account")
-            print("2. Generate a NEW App Password from Google Account Security")
-            print("3. Make sure you're using the correct Gmail address")
-            print("4. Check that the App Password has no spaces")
-            print(f"FALLBACK - Verification code for {user.email}: {verification_code}")
-            return True  # Return True so registration flow continues
-            
-        except Exception as e:
-            logging.error(f"Gmail connection error for {user.email}: {str(e)}")
-            print(f"[ERROR] Connection error: {e}")
-            print(f"FALLBACK - Verification code for {user.email}: {verification_code}")
-            return True  # Return True so registration flow continues
+        # Connect to server and send email with TLS
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.send_message(msg)
         
+        logging.info(f"Verification email sent to {user.email}")
+        return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        logging.error(f"SMTP authentication failed: {str(e)}")
+        return False
     except Exception as e:
-        logging.error(f"Failed to send verification email to {user.email}: {str(e)}")
-        print(f"FALLBACK - Verification code for {user.email}: {verification_code}")
-        return True  # Return True so registration flow continues
+        logging.error(f"Error sending verification email: {str(e)}")
+        return False
 
 def send_resend_verification_email(user):
     """Resend verification email to user"""

@@ -4,6 +4,8 @@
 
 {% block content %}
 {% set lang = current_user.language %}
+      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <style>
     .container {
         max-width: 700px;

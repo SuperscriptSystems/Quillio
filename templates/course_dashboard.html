@@ -64,6 +64,8 @@ async function improveTitle(courseId, currentTitle) {
 
 {% block content %}
 {% set lang = current_user.language %}
+      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <style>
     .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; margin-bottom: 20px;}

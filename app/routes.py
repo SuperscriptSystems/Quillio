@@ -68,6 +68,7 @@ def register():
             flash('Lesson length must be a number.', 'warning')
             return redirect(url_for('register'))
 
+        # Create new user
         new_user = User(
             email=email,
             full_name=full_name.strip(),
@@ -76,12 +77,16 @@ def register():
             bio=bio
         )
         new_user.set_password(password)
+        
+        # Generate verification code
+        new_user.generate_verification_code()
+        
         db.session.add(new_user)
         db.session.commit()
         
         # Send verification email
         if send_verification_email(new_user):
-            db.session.commit()  # Save the verification code
+            db.session.commit()  # Save any changes made by send_verification_email
             flash('Registration successful! Please check your email for a 6-digit verification code.', 'success')
             return redirect(url_for('verify_code', email=email))
         else:
@@ -414,7 +419,7 @@ def get_results_data():
 @login_required
 def loading_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
-    if not lesson or lesson.course.user_id != current_user.id:
+    if not lesson or not lesson.html_content or lesson.course.user_id != current_user.id:
         return redirect(url_for('course_dashboard'))
 
     # If content already exists, just show it. Also mark as complete if it's not.
