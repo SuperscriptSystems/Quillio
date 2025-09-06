@@ -25,6 +25,10 @@ class User(UserMixin, db.Model):
     verification_token = db.Column(db.String(100), nullable=True)
     token_expires_at = db.Column(db.DateTime, nullable=True)
 
+    # Password reset fields
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

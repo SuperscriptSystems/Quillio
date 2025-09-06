@@ -2,6 +2,8 @@ from flask import render_template, request, session, redirect, url_for, jsonify,
 from flask_login import login_user, logout_user, login_required, current_user
 import time
 import datetime
+import secrets
+from datetime import datetime, timedelta
 from app.configuration import app, db
 from app.models import User, Course, Lesson, UnitTestResult
 from app.services import (
@@ -15,7 +17,7 @@ from app.services import (
     edit_course_service,
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
-from app.email_service import send_verification_email, send_resend_verification_email
+from app.email_service import send_verification_email, send_resend_verification_email, send_password_reset_email
 
 
 # --- Authentication and Main Navigation Routes ---
@@ -684,3 +686,66 @@ def change_password():
 
     flash('Your password has been changed successfully!', 'success')
     return redirect(url_for('settings'))
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('course_dashboard'))
+        
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Generate a secure token and set expiration (1 hour from now)
+            user.reset_token = secrets.token_urlsafe(32)
+            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            
+            # Send password reset email
+            if send_password_reset_email(user, user.reset_token):
+                flash('Check your email for instructions to reset your password.', 'info')
+                return redirect(url_for('login'))
+            else:
+                flash('Failed to send password reset email. Please try again.', 'danger')
+        else:
+            # Don't reveal that the email doesn't exist for security reasons
+            flash('If an account exists with this email, you will receive a password reset link.', 'info')
+            return redirect(url_for('login'))
+            
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('course_dashboard'))
+        
+    user = User.query.filter_by(reset_token=token).first()
+    
+    # Check if token is valid and not expired
+    if not user or user.reset_token_expires < datetime.utcnow():
+        flash('The password reset link is invalid or has expired.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate passwords
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'danger')
+        elif password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+        else:
+            # Update password and clear reset token
+            user.set_password(password)
+            user.reset_token = None
+            user.reset_token_expires = None
+            db.session.commit()
+            
+            flash('Your password has been reset successfully! You can now log in with your new password.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', token=token)

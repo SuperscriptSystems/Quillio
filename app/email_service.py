@@ -103,3 +103,84 @@ def send_verification_email(user):
 def send_resend_verification_email(user):
     """Resend verification email to user"""
     return send_verification_email(user)
+
+def send_password_reset_email(user, reset_token):
+    """Send password reset email with reset token"""
+    try:
+        # Get SMTP configuration from environment variables
+        smtp_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+        port = int(os.getenv('MAIL_PORT', 587))
+        sender_email = os.getenv('MAIL_USERNAME')
+        app_password = os.getenv('MAIL_PASSWORD')
+        
+        if not all([smtp_server, sender_email, app_password]):
+            logging.warning("Email configuration is incomplete. Please check your environment variables.")
+            return False
+        
+        # Generate reset link
+        reset_link = url_for('reset_password', token=reset_token, _external=True)
+        
+        # Get the absolute path to the template
+        template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'reset_password_email.html')
+        
+        # Read the template content
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+        except Exception as e:
+            logging.error(f"Failed to read email template: {str(e)}")
+            return False
+        
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Reset Your Quillio Password"
+        msg['From'] = sender_email
+        msg['To'] = user.email
+        
+        # Render email template
+        html = render_template_string(
+            template_content,
+            user=user,
+            reset_link=reset_link
+        )
+        
+        # Create plain text version
+        text = f"""
+        Reset Your Quillio Password
+        ----------------------------
+        
+        Hello{user.full_name if user.full_name else ''},
+        
+        We received a request to reset the password for your Quillio account.
+        
+        Click the following link to reset your password:
+        {reset_link}
+        
+        This link will expire in 1 hour for security reasons.
+        
+        If you didn't request this, please ignore this email or contact support.
+        """
+        
+        # Attach both HTML and plain text versions
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
+        
+        # Create secure connection with server and send email
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.send_message(msg)
+            
+        logging.info(f"Password reset email sent to {user.email}")
+        return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        logging.error(f"SMTP authentication failed: {str(e)}")
+        return False
+    except Exception as e:
+        logging.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return False
