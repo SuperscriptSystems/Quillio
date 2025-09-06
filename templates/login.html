@@ -39,9 +39,11 @@
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
-        <p style="text-align: right; margin: 5px 0 15px 0;">
-            <a href="{{ url_for('forgot_password') }}" style="font-size: 13px;">Forgot Password?</a>
-        </p>
+        <div style="text-align: right; margin: 10px 0 20px 0; padding: 10px 0; border-top: 1px solid #4a5e6a; border-bottom: 1px solid #4a5e6a;">
+            <a href="{{ url_for('forgot_password') }}" style="font-size: 14px; color: #5cb85c; text-decoration: underline; font-weight: 500;">
+                Forgot your password? Click here to reset it
+            </a>
+        </div>
         <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up here</a></p>
     </div>
 </body>
