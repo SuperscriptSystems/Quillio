@@ -48,6 +48,12 @@
             border-color: #5cb85c;
             box-shadow: 0 0 0 1px #5cb85c;
         }
+        input:invalid, textarea:invalid {
+            border-color: #e53e3e;
+        }
+        input:invalid:focus, textarea:invalid:focus {
+            box-shadow: 0 0 0 1px #e53e3e;
+        }
         button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; margin-top: 10px; }
         button:hover { background: #4a9a4a; }
         p { text-align: center; margin-top: 20px; font-size: 14px; }
@@ -55,6 +61,13 @@
         a:hover { text-decoration: underline; }
         .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 8px; color: #fff; text-align: center; }
         .warning { background-color: #f0ad4e; }
+        .hint {
+            color: #9ca3af;
+            font-size: 0.8em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -88,23 +101,67 @@
             <!-- Initial settings -->
             <div class="form-group">
                 <label for="lesson_length">Ideal Lesson Length (minutes) <span class="required">*</span></label>
-                <input type="number" id="lesson_length" name="lesson_length" min="5" max="60" placeholder="e.g., 30" required>
+                <input type="number"
+                       id="lesson_length"
+                       name="lesson_length"
+                       min="10"
+                       max="120"
+                       value="30"
+                       placeholder="Between 10-120 minutes"
+                       required>
+                <div class="hint">Recommended: 20-60 minutes</div>
             </div>
 
             <!-- Optional details -->
             <div class="form-group">
-                <label for="age">Age <span class="optional">(optional)</span></label>
-                <input type="number" id="age" name="age" placeholder="Your age" min="1">
-            </div>
-
-            <div class="form-group">
-                <label for="bio">Short Bio <span class="optional">(optional)</span></label>
-                <textarea id="bio" name="bio" rows="3" placeholder="Tell us a bit about yourself"></textarea>
+                <label for="age">Age <span class="optional">(optional, 1-120)</span></label>
+                <input type="number"
+                       id="age"
+                       name="age"
+                       min="1"
+                       max="120"
+                       placeholder="Your age"
+                       oninput="this.setCustomValidity('')"
+                       oninvalid="this.setCustomValidity('Please enter an age between 1 and 120')">
+                <div class="hint">Must be at least 1 years old</div>
             </div>
 
             <button type="submit">Register</button>
         </form>
         <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
     </div>
+    <script>
+        // Add client-side validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+
+            form.addEventListener('submit', function(event) {
+                const ageInput = document.getElementById('age');
+                const lessonLengthInput = document.getElementById('lesson_length');
+
+                // Validate age if provided
+                if (ageInput.value) {
+                    const age = parseInt(ageInput.value);
+                    if (age < 1 || age > 120) {
+                        ageInput.setCustomValidity('Age must be between 1 and 120');
+                        ageInput.reportValidity();
+                        event.preventDefault();
+                        return false;
+                    }
+                }
+
+                // Validate lesson length
+                const lessonLength = parseInt(lessonLengthInput.value);
+                if (lessonLength < 10 || lessonLength > 120) {
+                    lessonLengthInput.setCustomValidity('Lesson length must be between 10 and 120 minutes');
+                    lessonLengthInput.reportValidity();
+                    event.preventDefault();
+                    return false;
+                }
+
+                return true;
+            });
+        });
+    </script>
 </body>
 </html>
