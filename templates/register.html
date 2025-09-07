@@ -11,8 +11,35 @@
         body { font-family: 'Roboto', sans-serif; background: #2A3F4A; color: #F0F0F0; margin: 0; padding: 40px 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .container { background: #344955; border-radius: 12px; padding: 40px; max-width: 500px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         h1 { text-align: center; color: #F0F0F0; margin-bottom: 25px; }
-        input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { width: 100%; box-sizing: border-box; padding: 12px; margin-bottom: 20px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-size: 15px; }
-        input:focus { outline: none; border-color: #5cb85c; }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #4a5e6a;
+            border-radius: 8px;
+            background: #2A3F4A;
+            color: #F0F0F0;
+            font-size: 15px;
+            font-family: 'Roboto', sans-serif;
+            resize: vertical;
+            min-height: 40px;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #5cb85c;
+            box-shadow: 0 0 0 1px #5cb85c;
+        }
         button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
         button:hover { background: #4a9a4a; }
         p { text-align: center; margin-top: 20px; font-size: 14px; }
