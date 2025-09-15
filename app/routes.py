@@ -421,7 +421,7 @@ def get_results_data():
 @login_required
 def loading_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
-    if not lesson or not lesson.html_content or lesson.course.user_id != current_user.id:
+    if not lesson  or lesson.course.user_id != current_user.id:
         return redirect(url_for('course_dashboard'))
 
     # If content already exists, just show it. Also mark as complete if it's not.
