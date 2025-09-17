@@ -32,15 +32,11 @@
 <div id="main-content">
     <div class="container">
       <h1>{% if lang == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}</h1>
+
+      <!-- Assessment Form -->
       <form method="POST" action="{{ url_for('assessment') }}" id="assessment-form">
         <label for="topic">{% if lang == 'russian' %}О чем бы вы хотели узнать?{% else %}What would you like to learn about?{% endif %}</label>
         <textarea id="topic" name="topic" placeholder="{% if lang == 'russian' %}Например, декораторы Python, история Второй мировой войны...{% else %}E.g. Python decorators, World War II history...{% endif %}" required></textarea>
-
-<!--        <div class="radio-group">-->
-<!--          <label>Assessment Format:</label><br>-->
-<!--          <label><input type="radio" name="format" value="multiple_choice" checked> Multiple Choice</label>-->
-<!--          <label><input type="radio" name="format" value="free_form"> Free-form Assignment</label>-->
-<!--        </div>-->
 
         <div class="slider-container">
           <label for="knowledge">{% if lang == 'russian' %}Насколько хорошо вы уже знаете эту тему? (0-100){% else %}How well do you know this topic already? (0-100){% endif %}</label>
@@ -51,27 +47,82 @@
             <span>{% if lang == 'russian' %}Эксперт{% else %}Expert{% endif %}</span>
           </div>
           <div class="current-value" id="slider-value">{% if lang == 'russian' %}Текущее: 50{% else %}Current: 50{% endif %}</div>
-                  <h3>{% if lang == 'russian' %}Давайте выясним, что вы знаете по этой теме{% else %}Let's find out what you know on this topic{% endif %}</h3>
+          <h3>{% if lang == 'russian' %}Давайте выясним, что вы знаете по этой теме{% else %}Let's find out what you know on this topic{% endif %}</h3>
         </div>
         <button type="submit">{% if lang == 'russian' %}Начать оценку{% else %}Start Assessment{% endif %}</button>
       </form>
+
+      <!-- Divider -->
+      <div style="text-align: center; margin: 30px 0; color: #E0E0E0;">
+        <hr style="border: 1px solid #4a5e6a; margin: 20px 0;">
+        <span style="background: #344955; padding: 0 15px; font-weight: bold;">
+          {% if lang == 'russian' %}ИЛИ{% else %}OR{% endif %}
+        </span>
+      </div>
+
+      <!-- File Upload Section -->
+      <div style="margin-top: 30px;">
+        <h2>{% if lang == 'russian' %}Загрузить документ{% else %}Upload Document{% endif %}</h2>
+        <p style="color: #E0E0E0; text-align: center; margin-bottom: 20px;">
+          {% if lang == 'russian' %}Загрузите PDF-файл для создания курса на основе его содержания{% else %}Upload a PDF file to create a course based on its content{% endif %}
+        </p>
+
+        <form method="POST" action="{{ url_for('upload_course') }}" enctype="multipart/form-data" id="upload-form">
+          <div style="margin-bottom: 20px;">
+            <label for="file" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
+              {% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}
+            </label>
+            <input type="file" id="file" name="file" accept=".pdf" required
+                   style="width: 100%; padding: 12px; border: 2px dashed #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; cursor: pointer;">
+          </div>
+
+          <button type="submit" style="background: #17a2b8; margin-top: 10px;">
+            {% if lang == 'russian' %}Создать курс из файла{% else %}Create Course from File{% endif %}
+          </button>
+        </form>
+      </div>
     </div>
 </div>
 
 <div id="loading">
-    <p>{% if lang == 'russian' %}🧪 Готовим вашу персональную оценку...{% else %}🧪 Preparing your custom assessment...{% endif %}</p>
+    <p id="loading-text">{% if lang == 'russian' %}🧪 Готовим вашу персональную оценку...{% else %}🧪 Preparing your custom assessment...{% endif %}</p>
     <div id="spinner"></div>
 </div>
 
 <script>
-    const form = document.getElementById('assessment-form');
+    const assessmentForm = document.getElementById('assessment-form');
+    const uploadForm = document.getElementById('upload-form');
     const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
     const mainContent = document.getElementById('main-content');
     const slider = document.getElementById("knowledge");
     const valueDisplay = document.getElementById("slider-value");
     const lang = '{{ lang }}';
 
-    form.addEventListener('submit', function () {
+    // Loading messages for different processes
+    const loadingMessages = {
+        assessment: {
+            russian: '🧪 Готовим вашу персональную оценку...',
+            english: '🧪 Preparing your custom assessment...'
+        },
+        upload: {
+            russian: '📄 Обрабатываем ваш PDF и создаем курс...',
+            english: '📄 Processing your PDF and creating course...'
+        }
+    };
+
+    // Assessment form loading
+    assessmentForm.addEventListener('submit', function () {
+        const message = lang === 'russian' ? loadingMessages.assessment.russian : loadingMessages.assessment.english;
+        loadingText.textContent = message;
+        mainContent.style.display = 'none';
+        loading.style.display = 'block';
+    });
+
+    // Upload form loading
+    uploadForm.addEventListener('submit', function () {
+        const message = lang === 'russian' ? loadingMessages.upload.russian : loadingMessages.upload.english;
+        loadingText.textContent = message;
       mainContent.style.display = 'none';
       loading.style.display = 'block';
     });

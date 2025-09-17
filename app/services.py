@@ -12,6 +12,9 @@ from models.json_extractor import JsonExtractor
 from models.fulltest import Test
 from models.question import Question
 from app.models import db, Course, Lesson
+import os
+import PyPDF2
+from werkzeug.utils import secure_filename
 
 
 def _update_token_count(tokens_to_add):

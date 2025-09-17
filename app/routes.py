@@ -18,6 +18,7 @@ from app.services import (
 )
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
 from app.email_service import send_verification_email, send_resend_verification_email, send_password_reset_email
+from app.file_services import create_course_from_file_service
 
 
 # --- Authentication and Main Navigation Routes ---
@@ -749,3 +750,33 @@ def reset_password(token):
             return redirect(url_for('login'))
     
     return render_template('reset_password.html', token=token)
+
+
+# --- File Upload Routes ---
+@app.route('/upload_course', methods=['POST'])
+@login_required
+def upload_course():
+    """Handle PDF file upload and create course from content."""
+    if 'file' not in request.files:
+        flash('No file selected', 'danger')
+        return redirect(url_for('home'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('No file selected', 'danger')
+        return redirect(url_for('home'))
+    
+    try:
+        # Create course from uploaded file
+        new_course, error = create_course_from_file_service(file, current_user)
+        
+        if error:
+            flash(f'Error creating course: {error}', 'danger')
+            return redirect(url_for('home'))
+        
+        flash(f'Course "{new_course.course_title}" created successfully from uploaded file!', 'success')
+        return redirect(url_for('show_course', course_id=new_course.id))
+        
+    except Exception as e:
+        flash(f'Error processing file: {str(e)}', 'danger')
+        return redirect(url_for('home'))

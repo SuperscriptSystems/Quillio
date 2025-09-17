@@ -55,7 +55,9 @@ dependencies = [
     "typing-extensions (==4.13.0)",
     "urllib3 (==2.2.2)",
     "werkzeug (==3.1.0)",
-    "gunicorn (==20.1.0)"
+    "gunicorn (==20.1.0)",
+    "pypdf2 (==3.0.1)",
+    "python-magic (==0.4.27)"
 ]
 
 
