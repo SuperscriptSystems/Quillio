@@ -19,6 +19,7 @@ from app.services import (
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
 from app.email_service import send_verification_email, send_resend_verification_email, send_password_reset_email
 from app.file_services import create_course_from_file_service
+from app.password_validator import validate_password_strength, format_password_errors_for_flash
 
 
 # --- Authentication and Main Navigation Routes ---
