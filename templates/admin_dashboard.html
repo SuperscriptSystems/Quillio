@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Quillio{% endblock %}
+
+{% block content %}
+<style>
+    .admin-container { 
+        background: #344955; 
+        border-radius: 12px; 
+        padding: 30px; 
+        max-width: 800px; 
+        margin: auto; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+    }
+    .admin-section {
+        background: #2A3F4A;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .model-selector {
+        background: #1e2d35;
+        border: 1px solid #4a5e6a;
+        border-radius: 6px;
+        padding: 10px;
+        color: #F0F0F0;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .regenerate-btn {
+        background: #d9534f;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    .regenerate-btn:hover {
+        background: #c9302c;
+    }
+    .admin-container h1, .admin-container h2, .admin-container h3 {
+        color: #F0F0F0;
+    }
+    .admin-container p, .admin-container li {
+        color: #E0E0E0;
+    }
+    .model-card {
+        margin-bottom: 15px; 
+        padding: 15px; 
+        background: #1e2d35; 
+        border-radius: 8px;
+        border-left: 4px solid #5cb85c;
+    }
+    .model-name {
+        font-weight: bold;
+        color: #5cb85c;
+        font-size: 1.1em;
+    }
+    .model-description {
+        color: #B0B0B0;
+        margin-top: 5px;
+    }
+    .instructions-box {
+        background: #1e2d35; 
+        padding: 20px; 
+        border-radius: 8px; 
+        margin-top: 20px;
+        border-left: 4px solid #f0ad4e;
+    }
+    .back-btn {
+        background: #5cb85c;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+    .back-btn:hover {
+        background: #4a9a4a;
+        text-decoration: none;
+    }
+</style>
+
+<div class="admin-container">
+    <a href="{{ url_for('course_dashboard') }}" class="back-btn">← Back to Dashboard</a>
+    
+    <h1>🔧 Admin Dashboard</h1>
+    <p>Manage AI models and regenerate content for all courses</p>
+
+    <div class="admin-section">
+        <h2>Available AI Models</h2>
+        <p>These models are available for course and lesson generation/regeneration:</p>
+        
+        {% for model_key, model_info in models.items() %}
+        <div class="model-card">
+            <div class="model-name">{{ model_info.name }}</div>
+            <div style="color: #888; font-size: 0.9em;">{{ model_key }}</div>
+            <div class="model-description">{{ model_info.description }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="admin-section">
+        <h2>Admin Features</h2>
+        <p>As an administrator, you have access to advanced content regeneration features:</p>
+        
+        <div class="instructions-box">
+            <h3>🎯 How to Use Admin Features:</h3>
+            <ul style="color: #E0E0E0; line-height: 1.6;">
+                <li><strong>Course Structure Regeneration:</strong> Go to any individual course page and use the "Regenerate Course Structure" button with your preferred AI model</li>
+                <li><strong>Lesson Content Regeneration:</strong> Go to any lesson page and use the "Regenerate Lesson Content" button with your preferred AI model</li>
+                <li><strong>Model Selection:</strong> Choose your preferred AI model before regenerating content for optimal results</li>
+                <li><strong>Quality Control:</strong> Use different models for different types of content (GPT-4 for complex topics, Claude for educational content)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <h2>Admin Status</h2>
+        <div style="background: #1e2d35; padding: 15px; border-radius: 6px;">
+            <p><strong>Current User:</strong> {{ current_user.full_name or current_user.email }}</p>
+            <p><strong>Admin Status:</strong> <span style="color: #5cb85c;">✓ Active Administrator</span></p>
+            <p><strong>Available Models:</strong> {{ models|length }} AI models configured</p>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <h2>Quick Actions</h2>
+        <p>Navigate to content management:</p>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <a href="{{ url_for('course_dashboard') }}" style="background: #5cb85c; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">📚 View All Courses</a>
+            <a href="{{ url_for('home') }}" style="background: #f0ad4e; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">➕ Create New Course</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
