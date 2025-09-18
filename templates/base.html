@@ -218,7 +218,9 @@
     </main>
 
     {% block scripts %}{% endblock %}
-    
+{% if current_user.is_admin() %}
+<a href="{{ url_for('admin_dashboard') }}">🔧 Admin</a>
+{% endif %}
     <script>
         function toggleUserDropdown() {
             const dropdown = document.getElementById('userDropdown');

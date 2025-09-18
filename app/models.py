@@ -29,12 +29,18 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(100), unique=True, nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
 
+    # Admin privileges
+    is_quillio_admin = db.Column(db.Boolean, nullable=False, default=False)
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
+    def is_admin(self):
+        """Check if user has admin privileges"""
+        return self.is_quillio_admin
+
     def generate_verification_code(self):
         """Generate a new 6-digit email verification code that expires in 24 hours"""
         self.verification_token = str(random.randint(100000, 999999))

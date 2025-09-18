@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Quillio{% endblock %}
+
+{% block content %}
+<style>
+    .admin-container {
+        background: #344955;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 800px;
+        margin: auto;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .admin-section {
+        background: #2A3F4A;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .model-selector {
+        background: #1e2d35;
+        border: 1px solid #4a5e6a;
+        border-radius: 6px;
+        padding: 10px;
+        color: #F0F0F0;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .regenerate-btn {
+        background: #d9534f;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    .regenerate-btn:hover {
+        background: #c9302c;
+    }
+</style>
+
+<div class="admin-container">
+    <h1>🔧 Admin Dashboard</h1>
+    <p>Manage AI models and regenerate content</p>
+
+    <div class="admin-section">
+        <h2>Available AI Models</h2>
+        {% for model_key, model_info in models.items() %}
+        <div style="margin-bottom: 15px; padding: 10px; background: #1e2d35; border-radius: 6px;">
+            <strong>{{ model_info.name }}</strong> ({{ model_key }})
+            <br>
+            <small style="color: #B0B0B0;">{{ model_info.description }}</small>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="admin-section">
+        <h2>Course Management</h2>
+        <p>Use the regenerate buttons on course and lesson pages to regenerate content with your selected model.</p>
+
+        <div style="background: #1e2d35; padding: 15px; border-radius: 6px; margin-top: 15px;">
+            <h3>How to Use Admin Features:</h3>
+            <ul style="color: #E0E0E0;">
+                <li><strong>Course Structure:</strong> Go to any course page and use the "Regenerate Course Structure" button</li>
+                <li><strong>Lesson Content:</strong> Go to any lesson page and use the "Regenerate Lesson Content" button</li>
+                <li><strong>Model Selection:</strong> Choose your preferred AI model before regenerating</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

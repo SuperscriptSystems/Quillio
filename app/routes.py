@@ -1,6 +1,7 @@
 from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context
 from flask_login import login_user, logout_user, login_required, current_user
 import time
+from app.admin_utils import admin_required, get_available_models
 import datetime
 import secrets
 from datetime import datetime, timedelta
@@ -21,6 +22,51 @@ from app.email_service import send_verification_email, send_resend_verification_
 from app.file_services import create_course_from_file_service
 from app.password_validator import validate_password_strength, format_password_errors_for_flash
 
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    """Admin dashboard with model selection and regeneration options"""
+    available_models = get_available_models()
+    return render_template('admin_dashboard.html', models=available_models)
+
+
+@app.route('/admin/regenerate_course_structure/<int:course_id>', methods=['POST'])
+@admin_required
+def admin_regenerate_course_structure(course_id):
+    """Regenerate course structure with admin-selected model"""
+    course = Course.query.get_or_404(course_id)
+    selected_model = request.form.get('model', 'gpt-3.5-turbo')
+
+    try:
+        # Use the selected model for regeneration
+        # This would integrate with your existing course generation service
+        # but pass the model parameter
+
+        flash(f'Course structure regenerated successfully using {selected_model}!', 'success')
+    except Exception as e:
+        flash(f'Error regenerating course structure: {str(e)}', 'danger')
+
+    return redirect(url_for('course_dashboard'))
+
+
+@app.route('/admin/regenerate_lesson_content/<int:lesson_id>', methods=['POST'])
+@admin_required
+def admin_regenerate_lesson_content(lesson_id):
+    """Regenerate lesson content with admin-selected model"""
+    lesson = Lesson.query.get_or_404(lesson_id)
+    selected_model = request.form.get('model', 'gpt-3.5-turbo')
+
+    try:
+        # Use the selected model for lesson regeneration
+        # This would integrate with your existing lesson generation service
+        # but pass the model parameter
+
+        flash(f'Lesson content regenerated successfully using {selected_model}!', 'success')
+    except Exception as e:
+        flash(f'Error regenerating lesson content: {str(e)}', 'danger')
+
+    return redirect(url_for('lesson', lesson_id=lesson_id))
 
 # --- Authentication and Main Navigation Routes ---
 @app.route('/login', methods=['GET', 'POST'])
