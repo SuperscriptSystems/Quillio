@@ -77,15 +77,18 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
-        
+
         if user and user.check_password(password):
-            # Generate and send login verification code (2FA for all users)
-            verification_code = user.generate_verification_code()
-            db.session.commit()  # Save the verification code immediately
-            
-            # Always redirect to code screen, send email in background
-            send_verification_email(user)
-            return redirect(url_for('login_verify_code', email=email))
+            if not user.is_verified:
+                flash('Please verify your email before logging in. Check your inbox for the verification code.',
+                      'warning')
+                return redirect(url_for('verify_code', email=email))
+
+            # Normal login (no email verification for login)
+            login_user(user)
+            flash('Login successful!', 'success')
+            return redirect(url_for('course_dashboard'))
+
         else:
             flash('Invalid email or password. Please try again.', 'danger')
     return render_template('login.html')
@@ -127,20 +130,20 @@ def register():
             bio=bio
         )
         new_user.set_password(password)
-        
+
         # Generate verification code
         new_user.generate_verification_code()
-        
+
         db.session.add(new_user)
         db.session.commit()
-        
+
         # Send verification email
         if send_verification_email(new_user):
-            db.session.commit()  # Save any changes made by send_verification_email
             flash('Registration successful! Please check your email for a 6-digit verification code.', 'success')
             return redirect(url_for('verify_code', email=email))
         else:
-            flash('Registration successful, but we could not send the verification email. Please contact support.', 'warning')
+            flash('Registration successful, but we could not send the verification email. Please contact support.',
+                  'warning')
             return redirect(url_for('login'))
     return render_template('register.html')
 
