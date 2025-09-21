@@ -4,7 +4,8 @@ import time
 from app.admin_utils import admin_required, get_available_models
 import datetime
 import secrets
-from datetime import datetime, timedelta
+import datetime
+from datetime import datetime as dt, timedelta
 from app.configuration import app, db
 from app.models import User, Course, Lesson, UnitTestResult
 from app.services import (
@@ -345,7 +346,7 @@ def show_certificate(course_id):
         flash("You must complete all lessons in this course to view the certificate.", "warning")
         return redirect(url_for('show_course', course_id=course_id))
 
-    completion_date = datetime.date.today().strftime("%B %d, %Y")
+    completion_date = dt.now().strftime("%B %d, %Y")
 
     return render_template('certificate.html',
                            user_name=(current_user.full_name or current_user.email),
