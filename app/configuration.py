@@ -50,9 +50,8 @@ login_manager.login_view = 'login'
 def inject_csrf_token():
     return dict(csrf_token=generate_csrf)
 
-# Import models after db is initialized to avoid circular imports
-from . import models
-from . import routes
+from app import models
+from app import routes
 
 
 @app.template_filter('shorten_title')
