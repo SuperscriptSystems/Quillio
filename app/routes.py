@@ -3,8 +3,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 import time
 from app.admin_utils import admin_required, get_available_models
 import datetime
+from app.forms import LoginForm, RegistrationForm, VerificationForm
 import secrets
-import datetime
 from datetime import datetime as dt, timedelta
 from app.configuration import app, db
 from app.models import User, Course, Lesson, UnitTestResult
@@ -69,30 +69,30 @@ def admin_regenerate_lesson_content(lesson_id):
 
     return redirect(url_for('lesson', lesson_id=lesson_id))
 
+
 # --- Authentication and Main Navigation Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-
-        if user and user.check_password(password):
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        
+        if user and user.check_password(form.password.data):
             if not user.is_verified:
-                flash('Please verify your email before logging in. Check your inbox for the verification code.',
-                      'warning')
-                return redirect(url_for('verify_code', email=email))
-
-            # Normal login (no email verification for login)
-            login_user(user)
+                flash('Please verify your email before logging in. Check your inbox for the verification code.', 'warning')
+                return redirect(url_for('verify_code', email=form.email.data))
+            
+            login_user(user, remember=form.remember.data)
             flash('Login successful!', 'success')
-            return redirect(url_for('course_dashboard'))
-
-        else:
-            flash('Invalid email or password. Please try again.', 'danger')
-    return render_template('login.html')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('course_dashboard'))
+        
+        flash('Invalid email or password. Please try again.', 'danger')
+    
+    return render_template('login.html', title='Login', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -157,14 +157,15 @@ def healthcheck():
 @app.route('/verify_code', methods=['GET', 'POST'])
 def verify_code():
     """Email verification code entry route for registration"""
-    email = request.args.get('email') or request.form.get('email')
+    form = VerificationForm()
+    email = request.args.get('email')
     
-    if not email:
-        flash('Invalid verification request.', 'danger')
-        return redirect(url_for('login'))
+    if email:
+        form.email.data = email
     
-    if request.method == 'POST':
-        verification_code = request.form.get('verification_code')
+    if form.validate_on_submit():
+        email = form.email.data
+        verification_code = form.verification_code.data
         user = User.query.filter_by(email=email).first()
         
         if not user:
@@ -182,35 +183,41 @@ def verify_code():
         else:
             flash('Invalid or expired verification code. Please try again.', 'danger')
     
-    return render_template('verify_code.html', email=email, verification_type='registration')
+    return render_template('verify_code.html', 
+                         email=email, 
+                         verification_type='registration',
+                         form=form)
 
 
 @app.route('/login_verify_code', methods=['GET', 'POST'])
 def login_verify_code():
     """Login verification code entry route"""
-    email = request.args.get('email') or request.form.get('email')
+    form = VerificationForm()
+    email = request.args.get('email')
     
-    if not email:
+    if email:
+        form.email.data = email
+    
+    user = User.query.filter_by(email=email).first() if email else None
+    if not user:
         flash('Invalid login request.', 'danger')
         return redirect(url_for('login'))
     
-    if request.method == 'POST':
-        verification_code = request.form.get('verification_code')
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            flash('Invalid login request.', 'danger')
-            return redirect(url_for('login'))
-        
+    if form.validate_on_submit():
+        verification_code = form.verification_code.data
         if user.verify_email_code(verification_code):
             db.session.commit()
             login_user(user)
             flash('Login successful!', 'success')
-            return redirect(url_for('course_dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('course_dashboard'))
         else:
-            flash('Invalid or expired verification code. Please try again.', 'danger')
+            flash('Invalid verification code. Please try again.', 'danger')
     
-    return render_template('verify_code.html', email=email, verification_type='login')
+    return render_template('verify_code.html', 
+                         email=email, 
+                         verification_type='login',
+                         form=form)
 
 
 @app.route('/resend_verification', methods=['GET', 'POST'])

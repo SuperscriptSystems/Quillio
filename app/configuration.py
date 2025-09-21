@@ -37,13 +37,18 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 # Initialize extensions
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-csrf = CSRFProtect(app)
+db = SQLAlchemy()
+migrate = Migrate()
+csrf = CSRFProtect()
+login_manager = LoginManager()
 
-Session(app)
-login_manager = LoginManager(app)
+# Initialize extensions with app
+db.init_app(app)
+migrate.init_app(app, db)
+csrf.init_app(app)
+login_manager.init_app(app)
 login_manager.login_view = 'login'
+Session(app)
 
 # Add CSRF token to all templates
 @app.context_processor

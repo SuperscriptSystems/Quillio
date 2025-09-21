@@ -60,6 +60,7 @@
             {% endif %}
         {% endwith %}
         <form method="POST" action="{{ url_for('register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Account credentials -->
             <input type="email" name="email" placeholder="Enter your Email" required>
             <input type="password" name="password" placeholder="Choose a Password" required>
