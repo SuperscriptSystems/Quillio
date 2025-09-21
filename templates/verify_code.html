@@ -75,19 +75,24 @@
         {% else %}
             <form method="POST" action="{{ url_for('verify_code') }}">
         {% endif %}
-            <input type="hidden" name="email" value="{{ email }}">
-            <input type="text" 
-                   name="verification_code" 
-                   class="verification-code-input"
-                   placeholder="000000" 
-                   maxlength="6" 
-                   pattern="[0-9]{6}"
-                   required
-                   autocomplete="off">
+            {{ form.hidden_tag() }}
+            {{ form.email(value=email, type='hidden') }}
+            <div class="form-group">
+                {{ form.verification_code(class_='form-control verification-code-input', 
+                                      placeholder='000000',
+                                      autocomplete='off',
+                                      maxlength='6',
+                                      pattern='[0-9]{6}') }}
+                {% if form.verification_code.errors %}
+                    {% for error in form.verification_code.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
             {% if verification_type == 'login' %}
-                <button type="submit">Complete Login</button>
+                {{ form.submit(class_='btn', value='Complete Login') }}
             {% else %}
-                <button type="submit">Verify Email</button>
+                {{ form.submit(class_='btn', value='Verify Email') }}
             {% endif %}
         </form>
         
