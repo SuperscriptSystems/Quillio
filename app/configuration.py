@@ -48,7 +48,7 @@ login_manager.login_view = 'login'
 # Add CSRF token to all templates
 @app.context_processor
 def inject_csrf_token():
-    return dict(csrf_token=generate_csrf)
+    return dict(csrf_token=generate_csrf())
 
 from app import models
 from app import routes
