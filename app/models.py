@@ -1,5 +1,5 @@
 from app.configuration import db, login_manager
-from app.db_utils import get_json_type
+from .db_utils import get_json_type
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import UUID
