@@ -1,14 +1,77 @@
 from app.configuration import db, login_manager
+from app.db_utils import get_json_type
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy.types import TypeDecorator, CHAR
+import uuid
 import secrets
 import random
 from datetime import datetime, timedelta
 
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type, otherwise uses
+    CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(PostgresUUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+            
+        # Convert to UUID if it's a string
+        if isinstance(value, str):
+            try:
+                # Try to convert from hex string if it's a valid UUID hex
+                if len(value) == 32 and all(c in '0123456789abcdef' for c in value.lower()):
+                    value = uuid.UUID(hex=value)
+                else:
+                    # Try to convert from standard UUID string
+                    value = uuid.UUID(value)
+            except (ValueError, AttributeError):
+                # If it's not a valid UUID string, treat it as a regular string ID
+                return value
+        
+        # Handle UUID object
+        if isinstance(value, uuid.UUID):
+            if dialect.name == 'postgresql':
+                return str(value)
+            return "%.32x" % value.int
+            
+        # Fallback for other types (like integer IDs)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+            
+        # If it's already a UUID, return as is
+        if isinstance(value, uuid.UUID):
+            return value
+            
+        # If it's a 32-character hex string (SQLite)
+        if isinstance(value, str) and len(value) == 32 and all(c in '0123456789abcdef' for c in value.lower()):
+            return uuid.UUID(hex=value)
+            
+        try:
+            # Try to convert from standard UUID string (PostgreSQL)
+            return uuid.UUID(str(value))
+        except (ValueError, AttributeError, TypeError):
+            # If all else fails, return the value as is
+            return value
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(GUID(), primary_key=True, default=uuid.uuid4)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     full_name = db.Column(db.String(120), nullable=True)
@@ -60,18 +123,18 @@ class User(UserMixin, db.Model):
 
 class Course(db.Model):
     __tablename__ = 'courses'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    id = db.Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(GUID(), db.ForeignKey('users.id'), nullable=False)
     course_title = db.Column(db.String(200), nullable=False)
-    course_data = db.Column(JSONB, nullable=False)
+    course_data = db.Column(get_json_type(), nullable=False)
     status = db.Column(db.String(50), nullable=False, default='active')
     completed_lessons = db.Column(db.Integer, nullable=False, default=0)
     user = db.relationship('User', backref=db.backref('courses', lazy=True, cascade='all, delete-orphan'))
 
 class Lesson(db.Model):
     __tablename__ = 'lessons'
-    id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    id = db.Column(GUID(), primary_key=True, default=uuid.uuid4)
+    course_id = db.Column(GUID(), db.ForeignKey('courses.id'), nullable=False)
     unit_title = db.Column(db.String, nullable=False)
     lesson_title = db.Column(db.String, nullable=False)
     html_content = db.Column(db.Text, nullable=True)
@@ -80,9 +143,9 @@ class Lesson(db.Model):
 
 class UnitTestResult(db.Model):
     __tablename__ = 'unit_test_results'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    id = db.Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(GUID(), db.ForeignKey('users.id'), nullable=False)
+    course_id = db.Column(GUID(), db.ForeignKey('courses.id'), nullable=False)
     unit_title = db.Column(db.String, nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
@@ -93,4 +156,4 @@ class UnitTestResult(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    return db.session.get(User, user_id)

@@ -14,9 +14,15 @@ load_dotenv(env_path)
 
 # --- App Initialization and Configuration ---
 app = Flask(__name__, template_folder='../templates', static_folder="../static")
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('CONNECTION_STRING')
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+
+# Use PostgreSQL if available, otherwise fall back to SQLite
+if os.environ.get('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quillio.db'
+    
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 
@@ -38,6 +44,7 @@ login_manager.login_view = 'login'
 
 from app import models
 from app import routes
+
 
 @app.template_filter('shorten_title')
 def shorten_title(title, max_words=6):

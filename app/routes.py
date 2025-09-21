@@ -281,7 +281,7 @@ def settings():
 
 
 # --- Course and Lesson Routes ---
-@app.route('/course/<int:course_id>')
+@app.route('/course/<uuid:course_id>')
 @login_required
 def show_course(course_id):
     course = Course.query.get_or_404(course_id)
@@ -306,7 +306,7 @@ def show_course(course_id):
                            is_course_complete=is_course_complete)
 
 
-@app.route('/course/<int:course_id>/archive', methods=['POST'])
+@app.route('/course/<uuid:course_id>/archive', methods=['POST'])
 @login_required
 def archive_course(course_id):
     course = Course.query.get_or_404(course_id)
@@ -317,7 +317,7 @@ def archive_course(course_id):
     return redirect(url_for('course_dashboard'))
 
 
-@app.route('/lesson/<int:lesson_id>')
+@app.route('/lesson/<uuid:lesson_id>')
 @login_required
 def show_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
@@ -332,7 +332,7 @@ def show_lesson(lesson_id):
                            lesson_id=lesson.id)
 
 
-@app.route('/course/<int:course_id>/certificate')
+@app.route('/course/<uuid:course_id>/certificate')
 @login_required
 def show_certificate(course_id):
     course = Course.query.get_or_404(course_id)
@@ -469,7 +469,7 @@ def get_results_data():
     return jsonify({'redirect_url': url_for('show_results')})
 
 
-@app.route('/loading/lesson/<int:lesson_id>')
+@app.route('/loading/lesson/<uuid:lesson_id>')
 @login_required
 def loading_lesson(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
@@ -489,7 +489,7 @@ def loading_lesson(lesson_id):
     return render_template('lesson_stream.html', lesson=lesson)
 
 
-@app.route('/stream_lesson_data/<int:lesson_id>')
+@app.route('/stream_lesson_data/<uuid:lesson_id>')
 @login_required
 def stream_lesson_data(lesson_id):
     lesson = db.session.get(Lesson, lesson_id)
@@ -502,7 +502,7 @@ def stream_lesson_data(lesson_id):
 
 
 # --- Unit Test Routes ---
-@app.route('/loading/unit_test/<int:course_id>/<unit_title>/<test_title>')
+@app.route('/loading/unit_test/<uuid:course_id>/<unit_title>/<test_title>')
 @login_required
 def loading_unit_test(course_id, unit_title, test_title):
     course = Course.query.get_or_404(course_id)
@@ -516,7 +516,7 @@ def loading_unit_test(course_id, unit_title, test_title):
     return render_template('loading.html', message=message, fetch_url=fetch_url, lang=lang)
 
 
-@app.route('/get_unit_test_data/<int:course_id>/<unit_title>/<test_title>')
+@app.route('/get_unit_test_data/<uuid:course_id>/<unit_title>/<test_title>')
 @login_required
 def get_unit_test_data(course_id, unit_title, test_title):
     course = Course.query.get_or_404(course_id)
@@ -684,7 +684,7 @@ def chat_with_tutor():
     return Response(stream_with_context(generate()), mimetype='text/plain')
 
 
-@app.route('/course/<int:course_id>/edit', methods=['POST'])
+@app.route('/edit_course/<uuid:course_id>', methods=['GET', 'POST'])
 @login_required
 def edit_course(course_id):
     course = Course.query.get_or_404(course_id)
