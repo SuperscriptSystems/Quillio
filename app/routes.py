@@ -282,12 +282,31 @@ def settings():
 
 # --- Course and Lesson Routes ---
 @app.route('/course/<uuid:course_id>')
-@login_required
-def show_course(course_id):
+@app.route('/course/<uuid:course_id>/<token>', methods=['GET'])
+def show_course(course_id, token=None):
     course = Course.query.get_or_404(course_id)
-    if course.user_id != current_user.id:
-        flash("You do not have permission to view this course.", "danger")
-        return redirect(url_for('course_dashboard'))
+    
+    # Check for valid token
+    user = None
+    if token:
+        user = User.verify_auth_token(token)
+    
+    # If no valid token and user is not logged in, redirect to login
+    if not user and not current_user.is_authenticated:
+        flash("Please log in to view this course.", "info")
+        return redirect(url_for('login', next=request.url))
+    
+    # Use the token user if available, otherwise use the current user
+    user = user or current_user
+    
+    # Check permissions
+    is_owner = user and user.id == course.user_id
+    is_admin = current_user.is_authenticated and current_user.is_admin()
+    has_valid_token = token is not None and user is not None
+    
+    if not (is_owner or is_admin or has_valid_token):
+        flash("You don't have permission to view this course.", "danger")
+        return redirect(url_for('home'))
 
     lessons = Lesson.query.filter_by(course_id=course.id).all()
     total_lessons = len(lessons)
@@ -335,18 +354,143 @@ def show_lesson(lesson_id):
 @app.route('/course/<uuid:course_id>/certificate')
 @login_required
 def show_certificate(course_id):
+    return redirect(url_for('public_certificate', course_id=course_id, token=current_user.get_auth_token()))
+
+@app.route('/public/certificate/<uuid:course_id>')
+@app.route('/public/certificate/<uuid:course_id>/<token>', methods=['GET'])
+def public_certificate(course_id, token=None):
+    # Get the course first
     course = Course.query.get_or_404(course_id)
-
-    if course.user_id != current_user.id:
-        flash("You do not have permission to view this certificate.", "danger")
-        return redirect(url_for('course_dashboard'))
-
+    
+    # Check if user is accessing via valid token
+    user = None
+    if token:
+        user = User.verify_auth_token(token)
+    
+    # If no valid token and user is not logged in, redirect to login
+    if not user and not current_user.is_authenticated:
+        flash("Please log in to view this certificate.", "info")
+        return redirect(url_for('login', next=request.url))
+    
+    # Use the token user if available, otherwise use the current user
+    user = user or current_user
+    
+    # Check if the course is completed
     total_lessons = Lesson.query.filter_by(course_id=course.id).count()
     if not (total_lessons > 0 and course.completed_lessons == total_lessons):
-        flash("You must complete all lessons in this course to view the certificate.", "warning")
-        return redirect(url_for('show_course', course_id=course_id))
-
+        flash("This course is not yet completed.", "warning")
+        if current_user.is_authenticated and current_user.id == course.user_id:
+            return redirect(url_for('show_course', course_id=course_id))
+        return redirect(url_for('home'))
+    
+    # Allow access if:
+    # 1. The user is the course owner
+    # 2. The user is an admin
+    # 3. The request includes a valid share token
+    is_owner = user and user.id == course.user_id
+    is_admin = current_user.is_authenticated and current_user.is_admin()
+    has_valid_token = token is not None and user is not None
+    
+    if not (is_owner or is_admin or has_valid_token):
+        flash("You don't have permission to view this certificate.", "danger")
+        return redirect(url_for('home'))
+    
     completion_date = dt.now().strftime("%B %d, %Y")
+    completion_score = 100  # Default to 100% for now, can be calculated based on test results if available
+    
+    # Generate shareable link
+    share_token = user.get_auth_token(expires_in=60*60*24*365)  # 1 year expiration
+    share_link = url_for('public_certificate', course_id=course_id, token=share_token, _external=True)
+    
+    # Generate course link with token if needed
+    if token and (not current_user.is_authenticated or current_user.id != course.user_id):
+        course_link = url_for('show_course', course_id=course_id, token=token, _external=True)
+    else:
+        course_link = url_for('show_course', course_id=course_id, _external=True)
+    
+    return render_template('certificate.html',
+                         user_name=user.full_name or user.email.split('@')[0],
+                         course_title=course.course_title,
+                         completion_date=completion_date,
+                         completion_score=completion_score,
+                         share_link=share_link,
+                         course_link=course_link,
+                         show_share_options=current_user.is_authenticated and current_user.id == user.id)
+
+@app.route('/course/<uuid:course_id>/duplicate', methods=['POST'])
+@login_required
+def duplicate_course(course_id):
+    # Get the original course
+    original_course = Course.query.get_or_404(course_id)
+    
+    try:
+        # Create a new course for the current user
+        new_course = Course(
+            user_id=current_user.id,
+            course_title=f"{original_course.course_title} (Copy)",
+            course_data=original_course.course_data,
+            status='active',
+            completed_lessons=0
+        )
+        
+        db.session.add(new_course)
+        db.session.flush()  # Get the new course ID
+        
+        # Duplicate all lessons
+        original_lessons = Lesson.query.filter_by(course_id=original_course.id).all()
+        for lesson in original_lessons:
+            new_lesson = Lesson(
+                course_id=new_course.id,
+                unit_title=lesson.unit_title,
+                lesson_title=lesson.lesson_title,
+                html_content=lesson.html_content,
+                is_completed=False
+            )
+            db.session.add(new_lesson)
+        
+        db.session.commit()
+        
+        flash('Course has been added to your dashboard!', 'success')
+        return jsonify({
+            'success': True,
+            'redirect_url': url_for('show_course', course_id=new_course.id)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/share-certificate', methods=['POST'])
+@login_required
+def share_certificate():
+    data = request.get_json()
+    email = data.get('email')
+    certificate_url = data.get('certificate_url')
+    course_title = data.get('course_title', 'a course')
+    
+    if not email or not certificate_url:
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+    
+    try:
+        subject = f"{current_user.full_name or current_user.email.split('@')[0]} shared a Quillio certificate with you"
+        body = f"""Hello!
+
+{current_user.full_name or current_user.email.split('@')[0]} has shared their Quill.io certificate for "{course_title}" with you.
+
+View the certificate here: {certificate_url}
+
+Best regards,
+The Quill.io Team"""
+        
+        # Send email (implement your email sending function here)
+        # Example: send_email(email, subject, body)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
     return render_template('certificate.html',
                            user_name=(current_user.full_name or current_user.email),

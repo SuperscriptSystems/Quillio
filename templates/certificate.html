@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate of Completion</title>
-      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <title>Certificate of Completion - {{ course_title }}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <style>
@@ -55,25 +55,65 @@
             font-size: 18px;
             margin-top: 30px;
         }
-        .print-button {
-            margin-top: 20px;
+        .button {
+            margin: 10px 5px;
             padding: 10px 20px;
-            background: #5cb85c;
-            color: white;
             border: none;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .print-button {
+            background: #5cb85c;
+            color: white;
         }
         .print-button:hover {
             background: #4a9a4a;
         }
+        .share-button {
+            background: #f0ad4e;
+            color: #000;
+        }
+        .share-button:hover {
+            background: #d4963c;
+            color: #000;
+        }
+        .share-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            display: {% if show_share_options %}block{% else %}none{% endif %};
+        }
+        .share-input {
+            padding: 10px;
+            width: 300px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .course-link {
+            margin-top: 20px;
+            display: block;
+            color: #2A3F4A;
+            text-decoration: none;
+        }
+        .course-link:hover {
+            text-decoration: underline;
+        }
+        .completion-score {
+            font-size: 18px;
+            margin: 15px 0;
+            color: #2A3F4A;
+        }
 
-        /* Hide the button when printing */
+        /* Hide elements when printing */
         @media print {
             body { background: #fff; }
-            .print-button { display: none; }
+            .button, .share-section, .course-link { display: none !important; }
         }
     </style>
 </head>
@@ -85,8 +125,63 @@
         <p class="subtitle">has successfully completed the course</p>
         <div class="course-title">"{{ course_title }}"</div>
         <p class="date">Awarded on: {{ completion_date }}</p>
+        <div class="completion-score">Score: {{ completion_score }}</div>
+        <div class="share-section">
+            <input class="share-input" type="text" value="{{ share_link }}" readonly>
+            <button class="button share-button">Share</button>
+        </div>
+        <button class="button print-button" onclick="window.print()"> Print Certificate</button>
+        <a class="course-link" href="{{ course_link }}">View Course</a>
     </div>
 
-    <button class="print-button" onclick="window.print()">🖨️ Print Certificate</button>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const shareButton = document.querySelector('.share-button');
+        const shareInput = document.querySelector('.share-input');
+        
+        // Copy link to clipboard when clicking the share button
+        shareButton.addEventListener('click', function() {
+            shareInput.select();
+            document.execCommand('copy');
+            
+            // Change button text temporarily
+            const originalText = shareButton.textContent;
+            shareButton.textContent = 'Copied!';
+            shareButton.style.backgroundColor = '#5cb85c';
+            
+            // Reset button after 2 seconds
+            setTimeout(function() {
+                shareButton.textContent = originalText;
+                shareButton.style.backgroundColor = '';
+            }, 2000);
+            
+            // Show a small notification
+            const notification = document.createElement('div');
+            notification.textContent = 'Link copied to clipboard!';
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = '#4CAF50';
+            notification.style.color = 'white';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '4px';
+            notification.style.zIndex = '1000';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(function() {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        });
+        
+        // Auto-select all text when clicking the input
+        shareInput.addEventListener('click', function() {
+            this.select();
+        });
+    });
+    </script>
 </body>
 </html>

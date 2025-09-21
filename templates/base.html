@@ -3,7 +3,42 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Quillio{% endblock %}</title>
+    <script>
+        // Add CSRF token to all AJAX requests
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Add CSRF token to all forms
+            document.querySelectorAll('form').forEach(form => {
+                // Only add if not already present
+                if (!form.querySelector('input[name="csrf_token"]')) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = csrfToken;
+                    form.prepend(csrfInput);
+                }
+            });
+            
+            // Add CSRF token to all fetch requests
+            const originalFetch = window.fetch;
+            window.fetch = function(resource, options = {}) {
+                // Only add to same-origin requests
+                if (!/^https?:\/\//i.test(resource) || resource.startsWith(window.location.origin)) {
+                    options.headers = options.headers || {};
+                    options.headers['X-CSRFToken'] = csrfToken;
+                    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+                        options.headers['Content-Type'] = 'application/json';
+                        options.body = JSON.stringify(options.body);
+                    }
+                }
+                return originalFetch(resource, options);
+            };
+        });
+    </script>
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
@@ -218,9 +253,13 @@
     </main>
 
     {% block scripts %}{% endblock %}
-{% if current_user.is_admin() %}
-<a href="{{ url_for('admin_dashboard') }}">🔧 Admin</a>
-{% endif %}
+    
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin_dashboard') }}">🔧 Admin</a>
+    {% endif %}
+    
+    {% block footer_scripts %}{% endblock %}
+    
     <script>
         function toggleUserDropdown() {
             const dropdown = document.getElementById('userDropdown');

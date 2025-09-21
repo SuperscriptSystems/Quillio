@@ -41,12 +41,21 @@
 </style>
 
 <div class="container">
-    <a href="#" id="edit-course-btn" title="Edit Course with AI">{% if lang == 'russian' %}Обновить курс{% else %}Update Course{% endif %}</a>
+    {% if current_user.is_authenticated and current_user.id == course_obj.user_id %}
+        <a href="#" id="edit-course-btn" title="Edit Course with AI">{% if lang == 'russian' %}Обновить курс{% else %}Update Course{% endif %}</a>
+    {% endif %}
+    
     <h1 id="course-title">{{ course.course_title | shorten_title }}</h1>
 
-    {% if is_course_complete %}
-        <a href="{{ url_for('show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
-            🏆 {% if lang == 'russian' %}Посмотреть сертификат{% else %}View Certificate{% endif %}
+    {% if current_user.is_authenticated %}
+        {% if is_course_complete %}
+            <a href="{{ url_for('show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
+                🏆 {% if lang == 'russian' %}Посмотреть сертификат{% else %}View Certificate{% endif %}
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('register', next=request.path) }}" class="btn btn-primary">
+            {% if lang == 'russian' %}Зарегистрироваться, чтобы начать курс{% else %}Sign up to take this course{% endif %}
         </a>
     {% endif %}
 
@@ -76,8 +85,70 @@
 
         </div>
     {% endfor %}
+    
+    {% if current_user.is_authenticated and current_user.id != course_obj.user_id %}
+        <div class="text-center mt-4">
+            <button id="take-course-btn" class="btn btn-primary btn-lg" 
+                    onclick="handleTakeCourse(event, '{{ course_obj.id }}', '{{ csrf_token() }}')">
+                {% if lang == 'russian' %}Взять этот курс{% else %}Take This Course{% endif %}
+            </button>
+            <div id="take-course-status" class="mt-2" style="display: none;"></div>
+        </div>
+    {% endif %}
+    
+    <script>
+    async function handleTakeCourse(event, courseId, csrfToken) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const button = event.target;
+        const statusDiv = document.getElementById('take-course-status');
+        
+        try {
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '{% if lang == "russian" %}Добавление...{% else %}Adding...{% endif %}';
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = '{% if lang == "russian" %}Добавление курса...{% else %}Adding course...{% endif %}';
+            statusDiv.style.color = 'white';
+            
+            console.log('Attempting to duplicate course:', courseId);
+            
+            const response = await fetch(`/course/${courseId}/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({})
+            });
+            
+            console.log('Response status:', response.status);
+            const result = await response.json();
+            console.log('Response data:', result);
+            
+            if (result.success && result.redirect_url) {
+                statusDiv.textContent = '{% if lang == "russian" %}Курс успешно добавлен! Перенаправление...{% else %}Course added! Redirecting...{% endif %}';
+                window.location.href = result.redirect_url;
+            } else {
+                throw new Error(result.error || '{% if lang == "russian" %}Не удалось добавить курс{% else %}Failed to add course{% endif %}');
+            }
+        } catch (error) {
+            console.error('Error in take course:', error);
+            statusDiv.textContent = `{% if lang == "russian" %}Ошибка: {% else %}Error: {% endif %}${error.message}`;
+            statusDiv.style.color = '#ff6b6b';
+            button.disabled = false;
+            button.innerHTML = '{% if lang == "russian" %}Попробовать снова{% else %}Try Again{% endif %}';
+            
+            // Reattach the click handler for the retry
+            button.onclick = (e) => handleTakeCourse(e, courseId, csrfToken);
+        }
+    }
+    </script>
 </div>
 
+{% block modals %}
 <div id="edit-modal-overlay">
     <div id="edit-modal">
         <h2>AI Course Editor</h2>
@@ -97,107 +168,128 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-async function improveTitle(courseId, currentTitle) {
-    try {
-        const response = await fetch(`/course/${courseId}/edit`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                request: `Improve the course title: ${currentTitle}`
-            })
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            // Reload the page to see the updated title
-            window.location.reload();
-        } else {
-            alert('Failed to improve title: ' + (result.error || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error improving title:', error);
-        alert('An error occurred while improving the title');
-    }
-}
+<script type="text/javascript">
+// Debug: Script loaded
+console.log('Course page script loaded');
 
-
-// Automatically improve the course title on page load
-document.addEventListener('DOMContentLoaded', async function() {
-    // Improve title
-    const titleElement = document.getElementById('course-title');
-    if (titleElement) {
-        try {
-            const response = await fetch(`/course/{{ course_obj.id }}/edit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    request: `Improve the course title: {{ course.course_title | tojson | safe }}`
-                })
-            });
-            
-            const result = await response.json();
-            if (result.success && result.course && result.course.course_title) {
-                titleElement.textContent = result.course.course_title;
-            }
-        } catch (error) {
-            console.error('Error improving title:', error);
-        }
-    }
+// Handle Edit Course Button
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
     
-    // Original event listeners
+    // Edit Course Button
     const editBtn = document.getElementById('edit-course-btn');
     const modalOverlay = document.getElementById('edit-modal-overlay');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const editForm = document.getElementById('edit-form');
-    const editInput = document.getElementById('edit-input');
-    const thinkingIndicator = document.getElementById('edit-thinking');
-    const saveBtn = document.getElementById('save-edit-btn');
-
-    editBtn.addEventListener('click', () => {
-        modalOverlay.style.display = 'flex';
-    });
-
-    closeModalBtn.addEventListener('click', () => {
-        modalOverlay.style.display = 'none';
-    });
-
-    editForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const userRequest = editInput.value.trim();
-        if (!userRequest) return;
-
-        thinkingIndicator.style.display = 'block';
-        saveBtn.disabled = true;
-
-        fetch("{{ url_for('edit_course', course_id=course_id) }}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ request: userRequest })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('{% if lang == "russian" %}Ошибка: {% else %}Error: {% endif %}' + data.error);
-                thinkingIndicator.style.display = 'none';
-                saveBtn.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Edit course error:', error);
-            alert('{% if lang == "russian" %}Произошла непредвиденная ошибка.{% else %}An unexpected error occurred.{% endif %}');
-            thinkingIndicator.style.display = 'none';
-            saveBtn.disabled = false;
+    
+    // Initialize edit button
+    if (editBtn && modalOverlay) {
+        editBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Edit button clicked');
+            modalOverlay.style.display = 'flex';
+            document.getElementById('edit-input')?.focus();
         });
-    });
+    }
+    
+    // Close modal
+    if (closeModalBtn && modalOverlay) {
+        closeModalBtn.addEventListener('click', function() {
+            modalOverlay.style.display = 'none';
+        });
+    }
+    
+    // Form submission
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('edit-input');
+            const request = input?.value.trim();
+            
+            if (!request) return;
+            
+            const thinking = document.getElementById('edit-thinking');
+            const saveBtn = document.getElementById('save-edit-btn');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                return;
+            }
+            
+            if (thinking) thinking.style.display = 'block';
+            if (saveBtn) saveBtn.disabled = true;
+            
+            fetch("{{ url_for('edit_course', course_id=course_obj.id) }}", {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ 
+                    request: request,
+                    csrf_token: csrfToken
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (thinking) thinking.style.display = 'none';
+                if (saveBtn) saveBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Take Course Button
+    const takeCourseBtn = document.getElementById('take-course-btn');
+    if (takeCourseBtn) {
+        takeCourseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Take course button clicked');
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                return;
+            }
+            
+            takeCourseBtn.disabled = true;
+            takeCourseBtn.textContent = 'Processing...';
+            
+            fetch(`/course/{{ course_obj.id }}/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    throw new Error(data.error || 'Failed to duplicate course');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                takeCourseBtn.disabled = false;
+                takeCourseBtn.textContent = 'Try Again';
+            });
+        });
+    }
 });
 </script>
+{% endblock %}
+
 {% endblock %}

@@ -9,6 +9,8 @@ import uuid
 import secrets
 import random
 from datetime import datetime, timedelta
+import jwt
+from flask import current_app
 
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
@@ -103,6 +105,23 @@ class User(UserMixin, db.Model):
     def is_admin(self):
         """Check if user has admin privileges"""
         return self.is_quillio_admin
+        
+    def get_auth_token(self, expires_in=3600):
+        """Generate a JWT token for authentication"""
+        return jwt.encode(
+            {'user_id': str(self.id), 'exp': datetime.utcnow() + timedelta(seconds=expires_in)},
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        
+    @staticmethod
+    def verify_auth_token(token):
+        """Verify JWT token and return user if valid"""
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            return db.session.get(User, uuid.UUID(data['user_id']))
+        except (jwt.PyJWTError, ValueError, AttributeError):
+            return None
 
     def generate_verification_code(self):
         """Generate a new 6-digit email verification code that expires in 24 hours"""
