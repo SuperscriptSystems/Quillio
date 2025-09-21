@@ -15,7 +15,7 @@ load_dotenv(env_path)
 
 # --- App Initialization and Configuration ---
 app = Flask(__name__, template_folder='../templates', static_folder="../static")
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 # Use PostgreSQL if available, otherwise fall back to SQLite
 if os.environ.get('DATABASE_URL'):
