@@ -58,7 +58,8 @@ dependencies = [
     "gunicorn (==20.1.0)",
     "pypdf2 (==3.0.1)",
     "python-magic (==0.4.27)",
-    "flask-wtf (>=1.2.2,<2.0.0)"
+    "flask-wtf (>=1.2.2,<2.0.0)",
+    "pyjwt (>=2.9,<3.0)"
 ]
 
 
