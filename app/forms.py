@@ -1,30 +1,39 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, validators
-from wtforms.validators import DataRequired, Email, Length, EqualTo
+from wtforms import StringField, PasswordField, IntegerField, RadioField, SubmitField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange
+
+# ----------------------------
+# User Authentication Forms
+# ----------------------------
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
-    remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
+
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[
-        DataRequired(),
-        Length(min=8, message='Password must be at least 8 characters long')
-    ])
-    confirm_password = PasswordField('Confirm Password', validators=[
-        DataRequired(),
-        EqualTo('password', message='Passwords must match')
-    ])
-    submit = SubmitField('Sign Up')
+    username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Register')
+
 
 class VerificationForm(FlaskForm):
-    verification_code = StringField('Verification Code', validators=[
-        DataRequired(),
-        Length(min=6, max=6, message='Verification code must be 6 digits'),
-        validators.Regexp('^[0-9]{6}$', message='Verification code must be 6 digits')
-    ])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Verify Email')
+    code = StringField('Verification Code', validators=[DataRequired()])
+    submit = SubmitField('Verify')
+
+
+# ----------------------------
+# Assessment Forms
+# ----------------------------
+class InitialAssessmentForm(FlaskForm):
+    topic = StringField("Topic", validators=[DataRequired()])
+    knowledge = IntegerField("Knowledge", validators=[DataRequired()])
+    submit = SubmitField("Start Assessment")
+
+class AnswerForm(FlaskForm):
+    answer = RadioField("Answer", choices=[], validators=[DataRequired()])
+    submit = SubmitField("Next")
+

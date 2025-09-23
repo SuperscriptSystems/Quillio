@@ -1,6 +1,8 @@
 from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context
 from flask_login import login_user, logout_user, login_required, current_user
 import time
+from app.forms import InitialAssessmentForm, AnswerForm
+from app.forms import InitialAssessmentForm
 from app.admin_utils import admin_required, get_available_models
 import datetime
 from app.forms import LoginForm, RegistrationForm, VerificationForm
@@ -509,41 +511,67 @@ The Quill.io Team"""
 @app.route('/assessment', methods=['GET', 'POST'])
 @login_required
 def assessment():
-    if request.method == 'POST':
-        if 'test' in session:
-            test = load_test_from_dict(session['test'])
-            session['answers'].append(
-                {'question': test.questions[session['index']].question, 'answer': request.form.get('answer')})
-            session['index'] += 1
+    # If the test exists in session, show current question
+    if 'test' in session:
+        test = load_test_from_dict(session['test'])
+        current_index = session.get('index', 0)
+        
+        # Check if we've completed all questions
+        if current_index >= len(test.questions):
+            return redirect(url_for('loading', context='results'))
+            
+        current_question = test.questions[current_index]
+
+        form = AnswerForm()
+        # Convert options dictionary to list of (value, text) tuples
+        form.answer.choices = [(key, value) for key, value in current_question.options.items()]
+
+        if form.validate_on_submit():
+            if 'answers' not in session:
+                session['answers'] = []
+                
+            # Get the selected option text from the form choices
+            selected_option = next((text for value, text in form.answer.choices 
+                                 if value == form.answer.data), form.answer.data)
+            
+            session['answers'].append({
+                'question': current_question.question,
+                'answer': selected_option,
+                'answer_value': form.answer.data  # Store the original value as well
+            })
+            session['index'] = current_index + 1
+            session.modified = True  # Ensure the session is saved
+
             if session['index'] < len(test.questions):
                 return redirect(url_for('assessment'))
             else:
                 return redirect(url_for('loading', context='results'))
-        else:
-            topic = request.form.get('topic')
-            knowledge = request.form.get('knowledge')
 
-            additional_context = f"User claims to be {knowledge}/100 in their knowledge of the topic."
-            user_profile = {'age': current_user.age, 'bio': current_user.bio}
+        return render_template('assessment.html', form=form, test=test, index=current_index)
 
-            test = generate_test_service(topic, "multiple_choice", additional_context,
-                                         current_user.language, user_profile=user_profile)
-            if not test:
-                flash("There was an error generating the test. Please try again.", "danger")
-                return redirect(url_for('home'))
-            session['test'] = save_test_to_dict(test)
-            session['answers'] = []
-            session['index'] = 0
-            return redirect(url_for('test_ready'))
+    # If no test exists, show initial assessment form
+    form = InitialAssessmentForm()
+    if form.validate_on_submit():
+        topic = form.topic.data
+        knowledge = form.knowledge.data
 
-    if 'test' not in session or session['index'] >= len(session['test']['questions']):
-        return redirect(url_for('home'))
-    test = load_test_from_dict(session['test'])
-    question = test.questions[session['index']]
-    input_html = render_answer_input(question)
-    return render_template('question_page.html', test_page=question, input_html=input_html,
-                           current=session['index'] + 1, total=len(test.questions), form_action=url_for('assessment'),
-                           lang=current_user.language)
+        additional_context = f"User claims to be {knowledge}/100 in their knowledge of the topic."
+        user_profile = {'age': current_user.age, 'bio': current_user.bio}
+
+        test = generate_test_service(topic, "multiple_choice", additional_context,
+                                     current_user.language, user_profile=user_profile)
+        if not test:
+            flash("There was an error generating the test. Please try again.", "danger")
+            return redirect(url_for('home'))
+
+        session['test'] = save_test_to_dict(test)
+        session['answers'] = []
+        session['index'] = 0
+        return redirect(url_for('assessment'))
+
+    return render_template('assessment.html', form=form)
+
+
 
 
 @app.route('/test_ready')

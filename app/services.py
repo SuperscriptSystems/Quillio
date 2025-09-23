@@ -46,8 +46,27 @@ def generate_test_service(topic, format_type, additional_context, language, user
 
 def evaluate_answers_service(questions, user_answers, language):
     """Evaluates answers using the Gemini model and updates token count."""
-    qa_list = [{"question": q.question, "answer": ua['answer']} for q, ua in zip(questions, user_answers)]
-    prompt = AnswerPromptBuilder.build_batch_check_prompt(qa_list, language)
+    # Create a list of question-answer pairs with the full answer text
+    qa_list = []
+    for q, ua in zip(questions, user_answers):
+        # Get the full answer text from the options using the option key
+        answer_key = ua.get('answer_value', ua.get('answer', ''))
+        answer_text = ua.get('answer', '')
+        
+        # If we have the options dictionary and the answer key exists in it, use the option text
+        if hasattr(q, 'options') and answer_key in q.options:
+            answer_text = q.options[answer_key]
+        
+        qa_list.append({
+            "question": q.question,
+            "answer": answer_text,
+            "original_answer": answer_key
+        })
+    
+    prompt = AnswerPromptBuilder.build_batch_check_prompt(
+        [{"question": qa["question"], "answer": qa["answer"]} for qa in qa_list],
+        language
+    )
     response_text, tokens = ask_gemini(prompt, json_mode=True)
     _update_token_count(tokens)
 
@@ -57,9 +76,20 @@ def evaluate_answers_service(questions, user_answers, language):
     try:
         response_json = JsonExtractor.extract_json(response_text)
         assessments = response_json.get("assessments", [])
-        detailed_results = [{"question": qa["question"], "answer": qa["answer"],
-                             "assessment": next((item['assessment'] for item in assessments if item['id'] == i),
-                                                "Evaluation Error")} for i, qa in enumerate(qa_list)]
+        detailed_results = []
+        
+        for i, qa in enumerate(qa_list):
+            assessment = next(
+                (item['assessment'] for item in assessments if item['id'] == i),
+                "Evaluation Error"
+            )
+            detailed_results.append({
+                "question": qa["question"],
+                "answer": qa["answer"],
+                "original_answer": qa["original_answer"],
+                "assessment": assessment
+            })
+            
         return detailed_results
     except (ValueError, KeyError) as e:
         print(f"Error parsing Gemini batch assessment response: {e}")

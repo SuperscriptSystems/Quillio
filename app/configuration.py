@@ -15,14 +15,16 @@ load_dotenv(env_path)
 
 # --- App Initialization and Configuration ---
 app = Flask(__name__, template_folder='../templates', static_folder="../static")
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+
+# Make sure SECRET_KEY is always set
+app.config['SECRET_KEY'] = "wdsadwfioji2ihhhdfuiah82" #os.environ.get('SECRET_KEY')
 
 # Use PostgreSQL if available, otherwise fall back to SQLite
 if os.environ.get('DATABASE_URL'):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quillio.db'
-    
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -50,10 +52,12 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 Session(app)
 
-# Add CSRF token to all templates
+
+# Add CSRF token to all templates (so you can use {{ csrf_token() }} in forms & meta tags)
 @app.context_processor
 def inject_csrf_token():
     return dict(csrf_token=generate_csrf())
+
 
 from app import models
 from app import routes
@@ -64,8 +68,7 @@ def shorten_title(title, max_words=6):
     """Shorten a title to be more concise while keeping it meaningful."""
     if not title:
         return title
-    
-    # Common phrases to remove or replace
+
     replacements = {
         'introduction to ': '',
         'introduction: ': '',
@@ -82,25 +85,22 @@ def shorten_title(title, max_words=6):
         'ultimate ': '',
         'comprehensive ': ''
     }
-    
-    # Apply replacements
+
     import re
     title_lower = title.lower()
     for old, new in replacements.items():
         title_lower = re.sub(r'\b' + re.escape(old) + r'\b', new, title_lower, flags=re.IGNORECASE)
-    
-    # Capitalize first letter of each word for the final title
+
     words = title_lower.title().split()
-    
-    # Keep only the first few words if the title is still long
+
     if len(words) > max_words:
         words = words[:max_words]
-        # Remove any trailing punctuation
         last_word = words[-1].rstrip('.,;:')
         if last_word != words[-1]:
             words[-1] = last_word
-    
+
     return ' '.join(words)
+
 
 @app.context_processor
 def inject_utility_functions():
