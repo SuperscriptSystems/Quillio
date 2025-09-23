@@ -1,14 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, RadioField, SubmitField
+from wtforms import StringField, PasswordField, IntegerField, RadioField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange
-
-# ----------------------------
-# User Authentication Forms
-# ----------------------------
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
+    remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
 
@@ -24,10 +21,6 @@ class VerificationForm(FlaskForm):
     code = StringField('Verification Code', validators=[DataRequired()])
     submit = SubmitField('Verify')
 
-
-# ----------------------------
-# Assessment Forms
-# ----------------------------
 class InitialAssessmentForm(FlaskForm):
     topic = StringField("Topic", validators=[DataRequired()])
     knowledge = IntegerField("Knowledge", validators=[DataRequired()])

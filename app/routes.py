@@ -1,4 +1,4 @@
-from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context
+from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 import time
 from app.forms import InitialAssessmentForm, AnswerForm
@@ -244,7 +244,6 @@ def resend_verification():
         else:
             flash('Failed to send verification code. Please try again later.', 'danger')
         
-        return redirect(url_for('resend_verification'))
     
     return render_template('resend_verification.html')
 
@@ -252,10 +251,57 @@ def resend_verification():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
+    # First, clear the user's session
     session.clear()
+    
+    # Create the response first
+    resp = make_response(redirect(url_for('login')))
+    
+    # Clear all possible session and auth cookies
+    cookie_names = [
+        'session',
+        'remember_token',
+        'session-',  # Flask-Session uses 'session-{id}'
+        'flask',
+        app.config.get('SESSION_COOKIE_NAME', 'session'),
+        app.config.get('REMEMBER_COOKIE_NAME', 'remember_token')
+    ]
+    
+    # Clear all cookies we can think of
+    for name in cookie_names:
+        resp.set_cookie(name, '', expires=0, path='/', httponly=True)
+    
+    # Clear Flask-Login cookies with all possible variations
+    cookie_domains = [None, app.config.get('SESSION_COOKIE_DOMAIN')]
+    for domain in cookie_domains:
+        resp.set_cookie(
+            app.config.get('REMEMBER_COOKIE_NAME', 'remember_token'),
+            '',
+            expires=0,
+            path=app.config.get('REMEMBER_COOKIE_PATH', '/'),
+            domain=domain,
+            secure=app.config.get('REMEMBER_COOKIE_SECURE', False),
+            httponly=True
+        )
+        resp.set_cookie(
+            app.config.get('SESSION_COOKIE_NAME', 'session'),
+            '',
+            expires=0,
+            path=app.config.get('SESSION_COOKIE_PATH', '/'),
+            domain=domain,
+            secure=app.config.get('SESSION_COOKIE_SECURE', False),
+            httponly=True
+        )
+    
+    # Finally, log the user out
+    logout_user()
+    
+    # Clear the session again for good measure
+    from flask import session as flask_session
+    flask_session.clear()
+    
     flash('You have been successfully logged out.', 'info')
-    return redirect(url_for('login'))
+    return resp
 
 
 @app.route('/create')

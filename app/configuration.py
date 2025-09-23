@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 import math
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -44,12 +45,26 @@ migrate = Migrate()
 csrf = CSRFProtect()
 login_manager = LoginManager()
 
+# Configure Flask-Login
+app.config['REMEMBER_COOKIE_NAME'] = 'remember_token'
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)  # 30 days
+app.config['REMEMBER_COOKIE_PATH'] = '/'
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # 30 days
+app.config['SESSION_COOKIE_NAME'] = 'session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
+app.config['SESSION_PROTECTION'] = 'strong'  # Prevent session fixation
+
 # Initialize extensions with app
 db.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.refresh_view = 'login'
+login_manager.needs_refresh_message = (u"Session timed out, please re-login")
+login_manager.needs_refresh_message_category = "info"
 Session(app)
 
 
