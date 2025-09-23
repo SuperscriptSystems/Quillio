@@ -18,7 +18,8 @@ class RegistrationForm(FlaskForm):
 
 
 class VerificationForm(FlaskForm):
-    code = StringField('Verification Code', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    verification_code = StringField('Verification Code', validators=[DataRequired()])
     submit = SubmitField('Verify')
 
 class InitialAssessmentForm(FlaskForm):
