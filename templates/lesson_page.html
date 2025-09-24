@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>{{ title }}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -204,14 +205,29 @@
             let fullResponse = ""; // To store the complete response for chat history
 
             try {
-                const response = await fetch("{{ url_for('chat_with_tutor') }}", {
+                const requestData = {
+                    lesson_id: lessonId,  // Keep as string (UUID)
+                    message: userMessage,
+                    history: chatHistory
+                };
+                
+                console.log('Sending request to server:', {
+                    url: "{{ url_for('chat_with_tutor') }}",
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lesson_id: parseInt(lessonId),
-                        message: userMessage,
-                        history: chatHistory
-                    })
+                    body: JSON.stringify(requestData, null, 2)
+                });
+                
+                // Get CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                const response = await fetch("{{ url_for('chat_with_tutor') }}", {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken  // Add CSRF token to headers
+                    },
+                    body: JSON.stringify(requestData)
                 });
 
                 if (!response.ok) {
@@ -236,8 +252,10 @@
                 chatHistory.push({ role: 'ai', content: fullResponse });
 
             } catch (error) {
-                aiMessageDiv.textContent = 'Sorry, an error occurred. Please try again.';
+                const errorMsg = error.message || 'An error occurred. Please try again.';
                 console.error('Chat error:', error);
+                aiMessageDiv.textContent = `Error: ${errorMsg}`;
+                aiMessageDiv.style.color = '#ff6b6b'; // Make error message stand out
             }
         });
 

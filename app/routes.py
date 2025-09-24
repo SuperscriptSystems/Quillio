@@ -937,29 +937,92 @@ def show_unit_test_results():
 @app.route('/chat_with_tutor', methods=['POST'])
 @login_required
 def chat_with_tutor():
-    data = request.get_json()
-    lesson_id = data.get('lesson_id')
-    user_question = data.get('message')
-    chat_history = data.get('history', [])
+    print("\n" + "="*50)
+    print("CHAT WITH TUTOR REQUEST")
+    print("="*50)
+    print(f"Current User: {current_user.id}")
+    print("\nREQUEST HEADERS:")
+    for k, v in request.headers.items():
+        print(f"  {k}: {v}")
+    
+    raw_data = request.get_data()
+    print("\nRAW REQUEST DATA:", raw_data)
+    
+    try:
+        data = request.get_json()
+        print("\nPARSED JSON DATA:", data)
+    except Exception as e:
+        print("\nERROR PARSING JSON:", str(e))
+        return jsonify({"error": "Invalid JSON data"}), 400
+    
+    try:
+        data = request.get_json()
+        print(f"Request data: {data}")
+        
+        if not data:
+            error_msg = "No data provided in request"
+            print(error_msg)
+            return jsonify({"error": error_msg}), 400
+            
+        lesson_id = data.get('lesson_id')
+        user_question = data.get('message')
+        chat_history = data.get('history', [])
 
-    if not lesson_id or not user_question:
-        return Response("Missing data", status=400)
+        print(f"Lesson ID: {lesson_id}, Type: {type(lesson_id).__name__}")
+        print(f"User Question: {user_question}")
+        print(f"Chat History Length: {len(chat_history)}")
 
-    lesson = db.session.get(Lesson, lesson_id)
-    if not lesson or lesson.course.user_id != current_user.id:
-        return Response("Unauthorized", status=403)
+        if not lesson_id or not user_question:
+            error_msg = f"Missing required fields. lesson_id: {lesson_id}, message: {bool(user_question)}"
+            print(error_msg)
+            return jsonify({"error": "Missing required fields: lesson_id and message are required"}), 400
 
-    ai_response_generator = get_tutor_response_service(lesson, chat_history, user_question, current_user)
+        # Try to get the lesson with the ID as a string first
+        lesson = db.session.get(Lesson, str(lesson_id))
+        if not lesson:
+            error_msg = f"Lesson not found with ID: {lesson_id} (type: {type(lesson_id).__name__})"
+            print(error_msg)
+            return jsonify({"error": "Lesson not found"}), 404
+            
+        print(f"Found lesson: {lesson.id}, Course ID: {lesson.course_id}, Owner ID: {lesson.course.user_id}")
+            
+        if lesson.course.user_id != current_user.id:
+            error_msg = f"User {current_user.id} is not authorized to access lesson {lesson.id} (owner: {lesson.course.user_id})"
+            print(error_msg)
+            return jsonify({"error": "Unauthorized access to this lesson"}), 403
 
-    def generate():
         try:
-            for chunk in ai_response_generator:
-                yield chunk
+            print("Generating AI response...")
+            ai_response_generator = get_tutor_response_service(lesson, chat_history, user_question, current_user)
+            print("AI response generator created successfully")
         except Exception as e:
-            print(f"Error during stream generation: {e}")
-            yield "I'm sorry, I encountered a technical issue. Please try again."
+            error_msg = f"Error getting tutor response: {str(e)}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": "Failed to generate AI response"}), 500
 
-    return Response(stream_with_context(generate()), mimetype='text/plain')
+        def generate():
+            try:
+                print("Starting response generation...")
+                for chunk in ai_response_generator:
+                    yield chunk
+                print("\nResponse generation completed successfully")
+            except Exception as e:
+                error_msg = f"Error during response generation: {str(e)}"
+                print(error_msg)
+                import traceback
+                traceback.print_exc()
+                yield "I'm sorry, I encountered a technical issue while generating a response. Please try again."
+
+        return Response(stream_with_context(generate()), mimetype='text/plain')
+        
+    except Exception as e:
+        error_msg = f"Unexpected error in chat_with_tutor: {str(e)}"
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
 @app.route('/edit_course/<uuid:course_id>', methods=['GET', 'POST'])
