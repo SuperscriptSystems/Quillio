@@ -89,7 +89,7 @@
     {% if current_user.is_authenticated and current_user.id != course_obj.user_id %}
         <div class="text-center mt-4">
             <button id="take-course-btn" class="btn btn-primary btn-lg" 
-                    onclick="handleTakeCourse(event, '{{ course_obj.id }}', '{{ csrf_token() }}')">
+                    onclick="handleTakeCourse(event, '{{ course_obj.id }}', document.querySelector('meta[name="csrf-token"]').getAttribute('content'))">
                 {% if lang == 'russian' %}Взять этот курс{% else %}Take This Course{% endif %}
             </button>
             <div id="take-course-status" class="mt-2" style="display: none;"></div>
