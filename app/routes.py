@@ -365,11 +365,20 @@ def show_course(course_id, token=None):
 
     lessons = Lesson.query.filter_by(course_id=course.id).all()
     total_lessons = len(lessons)
-    is_course_complete = (total_lessons > 0 and course.completed_lessons == total_lessons)
+    
+    # Get all test results for this course and user
+    test_results = UnitTestResult.query.filter_by(user_id=current_user.id, course_id=course_id).all()
+    total_tests = len(test_results)
+    completed_tests = len([r for r in test_results if r.score is not None])
+    
+    # Course is complete only if all lessons and all tests are completed
+    is_course_complete = (total_lessons > 0 and 
+                         course.completed_lessons == total_lessons and
+                         total_tests > 0 and 
+                         completed_tests == total_tests)
 
     lessons_dict = {lesson.lesson_title: lesson for lesson in lessons}
-    results = UnitTestResult.query.filter_by(user_id=current_user.id, course_id=course_id).all()
-    scores_dict = {result.unit_title: result.score for result in results}
+    scores_dict = {result.unit_title: result.score for result in test_results}
 
     return render_template('course.html',
                            course_obj=course,
@@ -788,29 +797,73 @@ def get_unit_test_data(course_id, unit_title, test_title):
 @app.route('/unit_test', methods=['GET', 'POST'])
 @login_required
 def unit_test():
-    if 'current_unit_test' not in session:
+    try:
+        if 'current_unit_test' not in session:
+            return redirect(url_for('course_dashboard'))
+        
+        test = load_test_from_dict(session['current_unit_test'])
+        
+        if 'current_unit_test_index' not in session:
+            session['current_unit_test_index'] = 0
+        if 'current_unit_test_answers' not in session:
+            session['current_unit_test_answers'] = []
+        
+        test_index = session['current_unit_test_index']
+        
+        if request.method == 'POST':
+            current_question = test.questions[test_index]
+            form = AnswerForm()
+            if hasattr(current_question, 'choices'):
+                form.answer.choices = [(str(i), str(choice)) for i, choice in enumerate(current_question.choices)]
+            
+            if 'answer' in request.form:
+                form.answer.data = request.form['answer']
+                
+                if form.answer.data is not None:
+                    session['current_unit_test_answers'].append({
+                        "question": current_question.question, 
+                        "answer": form.answer.data,
+                        "choices": getattr(current_question, 'choices', None)
+                    })
+                    
+                    session['current_unit_test_index'] += 1
+                    session.modified = True
+                    
+                    if session['current_unit_test_index'] >= len(test.questions):
+                        return redirect(url_for('loading', context='unit_results'))
+                    
+                    return redirect(url_for('unit_test'))
+            
+            flash('Please select an answer before continuing.', 'error')
+            return render_question(test, test_index, current_user.language)
+        
+        if test_index >= len(test.questions):
+            return redirect(url_for('loading', context='unit_results'))
+        
+        return render_question(test, test_index, current_user.language)
+        
+    except Exception:
+        flash('An error occurred while loading the test. Please try again.', 'error')
         return redirect(url_for('course_dashboard'))
 
-    test = load_test_from_dict(session['current_unit_test'])
-    test_index = session['current_unit_test_index']
-
-    if request.method == 'POST':
-        answer = request.form.get('answer')
-        session['current_unit_test_answers'].append({"question": test.questions[test_index].question, "answer": answer})
-        session['current_unit_test_index'] += 1
-        session.modified = True
-        if session['current_unit_test_index'] < len(test.questions):
-            return redirect(url_for('unit_test'))
-        else:
-            return redirect(url_for('loading', context='unit_results'))
-
-    if test_index >= len(test.questions):
-        return redirect(url_for('loading', context='unit_results'))
-
-    page = test.questions[test_index]
-    input_html = render_answer_input(page)
-    return render_template('question_page.html', test_page=page, input_html=input_html, current=test_index + 1,
-                           total=len(test.questions), form_action=url_for('unit_test'), lang=current_user.language)
+def render_question(test, test_index, lang):
+    """Helper function to render a question"""
+    current_question = test.questions[test_index]
+    
+    form = AnswerForm()
+    if hasattr(current_question, 'choices'):
+        form.answer.choices = [(str(i), str(choice)) for i, choice in enumerate(current_question.choices)]
+    
+    input_html = render_answer_input(current_question)
+    
+    return render_template('question_page.html',
+        test_page=current_question,
+        input_html=input_html,
+        current=test_index + 1,
+        total=len(test.questions),
+        form=form,
+        lang=lang
+    )
 
 
 @app.route('/get_unit_results_data')

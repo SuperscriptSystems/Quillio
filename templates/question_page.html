@@ -131,6 +131,26 @@ min-height: 100vh;
     button:hover {
         background: #4a9a4a;
     }
+    
+    .next-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .arrow {
+        font-size: 1.2em;
+        color: white;
+    }
+    
+    .finish-button {
+        background: #f0ad4e;
+    }
+    
+    .finish-button:hover {
+        background: #d4963c;
+    }
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -141,15 +161,30 @@ min-height: 100vh;
 <body>
     <div class="container">
         <h1>{% if lang == 'russian' %}Вопрос {{ current }} из {{ total }}{% else %}Question {{ current }} of {{ total }}{% endif %}</h1>
-        <form method="post" action="{{ form_action }}">
+        <form method="post" action="{{ url_for('unit_test') }}">
+            {{ form.hidden_tag() }}
             <h3><span class="q-icon">*</span>{{ test_page.question }}</h3>
             <input type="hidden" name="question" value="{{ test_page.question }}">
-            {{ input_html|safe }}
+            {% if form.answer.choices %}
+                {% for choice_value, choice_label in form.answer.choices %}
+                    <div class="radio-option">
+                        <input type="radio" id="answer-{{ loop.index }}" name="answer" value="{{ choice_value }}" {% if form.answer.data == choice_value %}checked{% endif %}>
+                        <label for="answer-{{ loop.index }}">{{ choice_label }}</label>
+                    </div>
+                {% endfor %}
+            {% else %}
+                {{ input_html|safe }}
+            {% endif %}
 
             {% if current < total %}
-                <button type="submit">{% if lang == 'russian' %}Далее ➡️{% else %}Next ➡️{% endif %}</button>
+                <button type="submit" class="next-button">
+                    {% if lang == 'russian' %}Далее{% else %}Next{% endif %}
+                    <span class="arrow">→</span>
+                </button>
             {% else %}
-                <button type="submit">{% if lang == 'russian' %}Завершить{% else %}Finish{% endif %}</button>
+                <button type="submit" class="finish-button">
+                    {% if lang == 'russian' %}Завершить{% else %}Finish{% endif %}
+                </button>
             {% endif %}
         </form>
     </div>

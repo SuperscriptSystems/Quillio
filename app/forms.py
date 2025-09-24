@@ -28,6 +28,9 @@ class InitialAssessmentForm(FlaskForm):
     submit = SubmitField("Start Assessment")
 
 class AnswerForm(FlaskForm):
-    answer = RadioField("Answer", choices=[], validators=[DataRequired()])
-    submit = SubmitField("Next")
-
+    answer = RadioField('Answer', coerce=str, validators=[DataRequired()])
+    submit = SubmitField('Submit')
+    
+    def __init__(self, *args, **kwargs):
+        super(AnswerForm, self).__init__(*args, **kwargs)
+        self.answer.choices = []
