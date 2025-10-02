@@ -1,13 +1,12 @@
+import secrets
 from flask import render_template, request, session, redirect, url_for, jsonify, flash, Response, stream_with_context, make_response
+from flask_wtf.csrf import generate_csrf
 from flask_login import login_user, logout_user, login_required, current_user
 import time
-from app.forms import InitialAssessmentForm, AnswerForm
-from app.forms import InitialAssessmentForm
+from app.forms import InitialAssessmentForm, AnswerForm, ForgotPasswordForm, VerificationForm, ResetPasswordForm
 from app.admin_utils import admin_required, get_available_models
-import datetime
+from datetime import datetime, timedelta
 from app.forms import LoginForm, RegistrationForm, VerificationForm
-import secrets
-from datetime import datetime as dt, timedelta
 from app.configuration import app, db
 from app.models import User, Course, Lesson, UnitTestResult
 from app.services import (
@@ -229,23 +228,21 @@ def resend_verification():
         email = request.form.get('email')
         user = User.query.filter_by(email=email).first()
         
-        if not user:
-            flash('No account found with that email address.', 'danger')
-            return redirect(url_for('resend_verification'))
-        
-        if user.is_verified:
-            flash('Your email is already verified. You can log in.', 'info')
-            return redirect(url_for('login'))
-        
-        if send_resend_verification_email(user):
+        # Don't reveal if the email exists for security
+        if user and not user.is_verified:
+            user.generate_verification_code()
             db.session.commit()
+            send_verification_email(user)
             flash('Verification code sent! Please check your inbox.', 'success')
             return redirect(url_for('verify_code', email=email))
-        else:
-            flash('Failed to send verification code. Please try again later.', 'danger')
         
+        # Show success message even if email doesn't exist (security)
+        flash('If an account exists with this email, a verification code has been sent.', 'info')
+        return redirect(url_for('login'))
     
-    return render_template('resend_verification.html')
+    # Pre-fill email if user is logged in but not verified
+    email = current_user.email if current_user.is_authenticated else ''
+    return render_template('resend_verification.html', email=email)
 
 
 @app.route('/logout')
@@ -1081,67 +1078,125 @@ def change_password():
     return redirect(url_for('settings'))
 
 
+@app.route('/verify_reset_code', methods=['GET', 'POST'])
+def verify_reset_code():
+    """Verify the password reset code and redirect to password reset if valid"""
+    if current_user.is_authenticated:
+        return redirect(url_for('course_dashboard'))
+    
+    # Check if user has an active password reset request
+    if 'reset_email' not in session:
+        flash('Invalid or expired password reset request. Please try again.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    user = User.query.filter_by(email=session['reset_email']).first()
+    if not user:
+        flash('Invalid or expired password reset request. Please try again.', 'danger')
+        session.pop('reset_email', None)
+        return redirect(url_for('forgot_password'))
+    
+    form = VerificationForm()
+    
+    if form.validate_on_submit():
+        code = form.verification_code.data
+        
+        if user.verify_reset_code(code):
+            # Generate a one-time token for the actual password reset
+            reset_token = secrets.token_urlsafe(32)
+            user.reset_token = reset_token
+            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            
+            # Store the token in the session for the next step
+            session['reset_token'] = reset_token
+            return redirect(url_for('reset_password', token=reset_token))
+        else:
+            flash('Invalid or expired verification code. Please try again.', 'danger')
+    
+    # For GET requests or failed form validation
+    return render_template('verify_code.html', 
+                         email=user.email, 
+                         verification_type='password_reset',
+                         form=form)
+
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
-        
-    if request.method == 'POST':
-        email = request.form.get('email')
+    
+    form = ForgotPasswordForm()
+    
+    if form.validate_on_submit():
+        email = form.email.data
         user = User.query.filter_by(email=email).first()
         
         if user:
-            # Generate a secure token and set expiration (1 hour from now)
-            user.reset_token = secrets.token_urlsafe(32)
-            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+            # Generate a 6-digit verification code
+            reset_code = user.generate_password_reset_code()
             db.session.commit()
             
-            # Send password reset email
-            if send_password_reset_email(user, user.reset_token):
-                flash('Check your email for instructions to reset your password.', 'info')
-                return redirect(url_for('login'))
+            # Send password reset email with verification code
+            if send_password_reset_email(user, reset_code):
+                # Store user email in session for verification
+                session['reset_email'] = user.email
+                flash('We\'ve sent a 6-digit verification code to your email. Please check your inbox.', 'info')
+                return redirect(url_for('verify_reset_code'))
             else:
-                flash('Failed to send password reset email. Please try again.', 'danger')
+                flash('Failed to send verification code. Please try again.', 'danger')
         else:
             # Don't reveal that the email doesn't exist for security reasons
-            flash('If an account exists with this email, you will receive a password reset link.', 'info')
+            flash('If an account exists with this email, you will receive a verification code.', 'info')
             return redirect(url_for('login'))
             
-    return render_template('forgot_password.html')
+    return render_template('forgot_password.html', form=form)
 
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('course_dashboard'))
-        
-    user = User.query.filter_by(reset_token=token).first()
     
-    # Check if token is valid and not expired
-    if not user or user.reset_token_expires < datetime.utcnow():
-        flash('The password reset link is invalid or has expired.', 'danger')
+    # Check if the token in the URL matches the one in the session
+    if 'reset_token' not in session or session['reset_token'] != token:
+        flash('Invalid or expired password reset request. Please try again.', 'danger')
+        session.pop('reset_token', None)
+        session.pop('reset_email', None)
         return redirect(url_for('forgot_password'))
     
-    if request.method == 'POST':
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        
-        # Validate passwords
-        if len(password) < 6:
-            flash('Password must be at least 6 characters long.', 'danger')
-        elif password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-        else:
+    # Get the user and verify the token is still valid
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or user.reset_token_expires < datetime.utcnow():
+        flash('The password reset link is invalid or has expired.', 'danger')
+        session.pop('reset_token', None)
+        session.pop('reset_email', None)
+        return redirect(url_for('forgot_password'))
+    
+    # Initialize the form
+    form = ResetPasswordForm()
+    
+    if form.validate_on_submit():
+        try:
             # Update password and clear reset token
-            user.set_password(password)
+            user.set_password(form.password.data)
             user.reset_token = None
             user.reset_token_expires = None
             db.session.commit()
             
+            # Clear the session
+            session.pop('reset_token', None)
+            session.pop('reset_email', None)
+            
             flash('Your password has been reset successfully! You can now log in with your new password.', 'success')
             return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while resetting your password. Please try again.', 'danger')
+            app.logger.error(f'Error resetting password: {str(e)}')
     
-    return render_template('reset_password.html', token=token)
+    # Generate CSRF token for the form
+    csrf_token = generate_csrf()
+    return render_template('reset_password.html', form=form, token=token, csrf_token=csrf_token)
 
 
 # --- File Upload Routes ---

@@ -104,8 +104,8 @@ def send_resend_verification_email(user):
     """Resend verification email to user"""
     return send_verification_email(user)
 
-def send_password_reset_email(user, reset_token):
-    """Send password reset email with reset token"""
+def send_password_reset_email(user, reset_code):
+    """Send password reset email with verification code"""
     try:
         # Get SMTP configuration from environment variables
         smtp_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -116,9 +116,6 @@ def send_password_reset_email(user, reset_token):
         if not all([smtp_server, sender_email, app_password]):
             logging.warning("Email configuration is incomplete. Please check your environment variables.")
             return False
-        
-        # Generate reset link
-        reset_link = url_for('reset_password', token=reset_token, _external=True)
         
         # Get the absolute path to the template
         template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'reset_password_email.html')
@@ -133,32 +130,33 @@ def send_password_reset_email(user, reset_token):
         
         # Create message
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = "Reset Your Quillio Password"
+        msg['Subject'] = "Password Reset Verification - Quillio"
         msg['From'] = sender_email
         msg['To'] = user.email
         
-        # Render email template
+        # Render email template with verification code
         html = render_template_string(
             template_content,
             user=user,
-            reset_link=reset_link
+            reset_code=reset_code
         )
         
         # Create plain text version
         text = f"""
-        Reset Your Quillio Password
-        ----------------------------
+        Password Reset Verification - Quillio
+        -----------------------------------
         
         Hello{user.full_name if user.full_name else ''},
         
         We received a request to reset the password for your Quillio account.
         
-        Click the following link to reset your password:
-        {reset_link}
+        Your verification code is: {reset_code}
         
-        This link will expire in 1 hour for security reasons.
+        Enter this code in the password reset form to verify your identity.
         
-        If you didn't request this, please ignore this email or contact support.
+        This code will expire in 1 hour for security reasons.
+        
+        If you didn't request this, please ignore this email.
         """
         
         # Attach both HTML and plain text versions
@@ -173,7 +171,7 @@ def send_password_reset_email(user, reset_token):
             server.login(sender_email, app_password)
             server.send_message(msg)
             
-        logging.info(f"Password reset email sent to {user.email}")
+        logging.info(f"Password reset verification email sent to {user.email}")
         return True
         
     except smtplib.SMTPAuthenticationError as e:

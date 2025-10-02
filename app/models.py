@@ -102,8 +102,8 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @property
     def is_admin(self):
-        """Check if user has admin privileges"""
         return self.is_quillio_admin
         
     def get_auth_token(self, expires_in=3600):
@@ -137,6 +137,22 @@ class User(UserMixin, db.Model):
             self.is_verified = True
             self.verification_token = None
             self.token_expires_at = None
+            return True
+        return False
+
+    def generate_password_reset_code(self):
+        """Generate a new 6-digit password reset code that expires in 1 hour"""
+        self.reset_token = str(random.randint(100000, 999999))
+        self.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+        return self.reset_token
+    
+    def verify_reset_code(self, code):
+        """Verify password reset code"""
+        if (self.reset_token == str(code) and 
+            self.reset_token_expires and 
+            datetime.utcnow() < self.reset_token_expires):
+            self.reset_token = None
+            self.reset_token_expires = None
             return True
         return False
 

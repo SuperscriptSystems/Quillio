@@ -254,8 +254,8 @@
 
     {% block scripts %}{% endblock %}
     
-    {% if current_user.is_admin() %}
-    <a href="{{ url_for('admin_dashboard') }}">🔧 Admin</a>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('admin_dashboard') }}" class="admin-link">🔧 Admin</a>
     {% endif %}
     
     {% block footer_scripts %}{% endblock %}

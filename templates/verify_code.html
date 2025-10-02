@@ -45,6 +45,8 @@
     <div class="container">
         {% if verification_type == 'login' %}
             <h1>Complete Login</h1>
+        {% elif verification_type == 'password_reset' %}
+            <h1>Password Reset Verification</h1>
         {% else %}
             <h1>Verify Your Email</h1>
         {% endif %}
@@ -58,20 +60,19 @@
         {% endwith %}
         
         <div class="instructions">
-            {% if verification_type == 'login' %}
-                <p>✅ A 6-digit verification code has been sent to:</p>
-                <p class="email-display">{{ email }}</p>
-                <p>Enter the code below to complete your login.</p>
-                <p style="font-size: 12px; color: #888;">Check your email inbox (and spam folder) for the verification code.</p>
+            {% if verification_type == 'password_reset' %}
+                We've sent a verification code to <span class="email-display">{{ email }}</span>.
+                Please enter it below to reset your password.
             {% else %}
-                <p>We've sent a 6-digit verification code to:</p>
-                <p class="email-display">{{ email }}</p>
-                <p>Enter the code below to verify your account.</p>
+                We've sent a verification code to <span class="email-display">{{ email }}</span>.
+                Please enter it below to continue.
             {% endif %}
         </div>
         
         {% if verification_type == 'login' %}
             <form method="POST" action="{{ url_for('login_verify_code') }}">
+        {% elif verification_type == 'password_reset' %}
+            <form method="POST" action="{{ url_for('verify_reset_code') }}">
         {% else %}
             <form method="POST" action="{{ url_for('verify_code') }}">
         {% endif %}
@@ -91,6 +92,8 @@
             </div>
             {% if verification_type == 'login' %}
                 {{ form.submit(class_='btn', value='Complete Login') }}
+            {% elif verification_type == 'password_reset' %}
+                {{ form.submit(class_='btn', value='Verify Code') }}
             {% else %}
                 {{ form.submit(class_='btn', value='Verify Email') }}
             {% endif %}

@@ -160,8 +160,8 @@ async function improveTitle(courseId, currentTitle) {
 <div class="container">
     <div class="header">
         <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
-        {% if current_user.is_admin() %}
-            <a href="{{ url_for('admin_dashboard') }}" style="background: #d9534f; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold;">🔧 Admin</a>
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="admin-button">🔧 Admin</a>
         {% endif %}
     </div>
 
