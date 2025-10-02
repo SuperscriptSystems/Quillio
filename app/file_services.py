@@ -18,46 +18,99 @@ def _update_token_count(tokens_to_add):
 def extract_text_from_pdf(file_path):
     """Extract text content from a PDF file."""
     try:
+        print(f"Attempting to read PDF from: {file_path}")
+        print(f"File exists: {os.path.exists(file_path)}")
+        print(f"File size: {os.path.getsize(file_path) if os.path.exists(file_path) else 0} bytes")
+        
+        # Read file in binary mode first
         with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-        return text.strip()
+            file_content = file.read()
+            
+        # Create file-like object from bytes
+        from io import BytesIO
+        pdf_file = BytesIO(file_content)
+        
+        # Extract text using PyPDF2
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            try:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+            except Exception as page_error:
+                print(f"Warning: Error processing page: {str(page_error)}")
+                continue
+                
+        print(f"Extracted {len(text)} characters of text from PDF")
+        return text.strip() if text.strip() else None
+        
     except Exception as e:
-        print(f"Error extracting text from PDF: {str(e)}")
+        import traceback
+        error_msg = f"Error extracting text from PDF: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
         return None
 
 
 def process_uploaded_file(file):
     """Process uploaded file and extract text content."""
+    import tempfile
+    import shutil
+    
     if not file or file.filename == '':
         return None, "No file selected"
     
-    # Check file extension
-    filename = secure_filename(file.filename)
-    if not filename.lower().endswith('.pdf'):
-        return None, "Only PDF files are supported"
-    
-    # Create uploads directory if it doesn't exist
-    upload_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    # Save file temporarily
-    file_path = os.path.join(upload_dir, filename)
-    file.save(file_path)
-    
+    temp_dir = None
     try:
-        # Extract text from PDF
-        extracted_text = extract_text_from_pdf(file_path)
-        if not extracted_text:
-            return None, "Could not extract text from PDF"
+        # Check file extension
+        filename = secure_filename(file.filename)
+        if not filename.lower().endswith('.pdf'):
+            return None, "Only PDF files are supported"
         
-        return extracted_text, None
+        # Create a temporary directory
+        temp_dir = tempfile.mkdtemp()
+        temp_filepath = os.path.join(temp_dir, 'temp_upload.pdf')
+        print(f"Temporary file path: {temp_filepath}")
+        
+        # Save the file directly to the temporary location
+        try:
+            file.save(temp_filepath)
+            print(f"File saved to temporary location: {temp_filepath}")
+            print(f"Temporary file size: {os.path.getsize(temp_filepath)} bytes")
+            
+            # Verify the file was saved correctly
+            if not os.path.exists(temp_filepath):
+                return None, "Failed to save temporary file"
+                
+            # Extract text from PDF
+            print("Attempting to extract text from PDF...")
+            extracted_text = extract_text_from_pdf(temp_filepath)
+            if not extracted_text:
+                return None, "Could not extract text from PDF"
+            
+            print(f"Successfully extracted {len(extracted_text)} characters from PDF")
+            return extracted_text, None
+            
+        except Exception as e:
+            import traceback
+            error_msg = f"Error processing file: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            return None, f"Error processing file: {str(e)}"
+            
+    except Exception as e:
+        import traceback
+        error_msg = f"Unexpected error: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        return None, f"Unexpected error: {str(e)}"
+        
     finally:
-        # Clean up temporary file
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        # Clean up temporary directory
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+                print(f"Cleaned up temporary directory: {temp_dir}")
+            except Exception as e:
+                print(f"Warning: Could not remove temporary directory {temp_dir}: {str(e)}")
 
 
 def create_course_from_file_service(file, user):

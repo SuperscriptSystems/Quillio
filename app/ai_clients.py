@@ -1,35 +1,53 @@
 import os
 import google.generativeai as genai
-from typing import Generator, Tuple, Optional
+from typing import Generator, Tuple, Optional, List
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+def list_available_models() -> List[str]:
+    """List all available models from the API."""
+    try:
+        models = genai.list_models()
+        return [model.name for model in models]
+    except Exception as e:
+        print(f"Error listing models: {e}")
+        return []
+
+# Get available models and use the first suitable one
+available_models = list_available_models()
+print("Available models:", available_models)
+
+# Use gemini-2.5-flash as the default model
+DEFAULT_MODEL = "gemini-2.5-flash"
+print(f"Using model: {DEFAULT_MODEL}")
+
 # Model configurations
 MODEL_CONFIGS = {
-    "gemini-1.5-flash": {
-        "model": "gemini-1.5-flash",
-        "max_output_tokens": 4000,
+    "gemini-2.5-flash": {
+        "model": "gemini-2.5-flash",
+        "max_output_tokens": 8192,  # Higher token limit for better context
         "temperature": 0.7,
         "top_p": 1.0,
         "top_k": 40
     },
-    "gemini-1.5-pro": {
-        "model": "gemini-1.5-pro",
-        "max_output_tokens": 4000,
+    "gemini-2.5-pro": {
+        "model": "gemini-2.5-pro",
+        "max_output_tokens": 8192,
         "temperature": 0.7,
         "top_p": 1.0,
         "top_k": 40
     }
 }
 
-def _call_gemini(prompt: str, model_name: str = "gemini-1.5-flash", json_mode: bool = False) -> Tuple[str, int]:
+def _call_gemini(prompt: str, model_name: str = None, json_mode: bool = False) -> Tuple[str, int]:
     """
     Internal function to call Gemini API with the specified model.
     Returns a tuple: (text_response, tokens_used)
     """
     try:
-        config = MODEL_CONFIGS.get(model_name, MODEL_CONFIGS["gemini-1.5-flash"])
+        model_name = model_name or DEFAULT_MODEL
+        config = MODEL_CONFIGS.get(model_name, next(iter(MODEL_CONFIGS.values())))
         
         model = genai.GenerativeModel(
             model_name=config["model"],
@@ -61,13 +79,14 @@ def _call_gemini(prompt: str, model_name: str = "gemini-1.5-flash", json_mode: b
         print(f"Error with Gemini API: {str(e)}")
         raise
 
-def _stream_gemini(prompt: str, model_name: str = "gemini-1.5-flash") -> Generator[str, None, None]:
+def _stream_gemini(prompt: str, model_name: str = None) -> Generator[str, None, None]:
     """
     Stream response from Gemini API.
     Yields text chunks as they are generated.
     """
     try:
-        config = MODEL_CONFIGS.get(model_name, MODEL_CONFIGS["gemini-1.5-flash"])
+        model_name = model_name or DEFAULT_MODEL
+        config = MODEL_CONFIGS.get(model_name, next(iter(MODEL_CONFIGS.values())))
         
         model = genai.GenerativeModel(
             model_name=config["model"],
@@ -90,23 +109,23 @@ def _stream_gemini(prompt: str, model_name: str = "gemini-1.5-flash") -> Generat
         raise
 
 # Public API functions
-def ask_ai(prompt: str, model: str = "gemini-1.5-flash", json_mode: bool = False) -> Tuple[str, int]:
+def ask_ai(prompt: str, model: str = None, json_mode: bool = False) -> Tuple[str, int]:
     """
     Sends a prompt to the specified Gemini model.
     Returns a tuple: (text_response, estimated_tokens_used)
     """
     return _call_gemini(prompt, model, json_mode)
 
-def ask_ai_stream(prompt: str, model: str = "gemini-1.5-flash") -> Generator[str, None, None]:
+def ask_ai_stream(prompt: str, model: str = None) -> Generator[str, None, None]:
     """
     Sends a prompt to the specified Gemini model and streams the response.
     Yields text chunks as they are generated.
     """
-    return _stream_gemini(prompt, model)
+    yield from _stream_gemini(prompt, model)
 
 # Backward compatibility
 def ask_gemini(prompt: str, json_mode: bool = False) -> Tuple[str, int]:
-    return ask_ai(prompt, "gemini-1.5-flash", json_mode)
+    return ask_ai(prompt, None, json_mode)
 
 def ask_gemini_stream(prompt: str) -> Generator[str, None, None]:
-    return ask_ai_stream(prompt, "gemini-1.5-flash")
+    return ask_ai_stream(prompt, None)
