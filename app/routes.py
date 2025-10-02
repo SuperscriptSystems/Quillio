@@ -353,7 +353,7 @@ def show_course(course_id, token=None):
     
     # Check permissions
     is_owner = user and user.id == course.user_id
-    is_admin = current_user.is_authenticated and current_user.is_admin()
+    is_admin = current_user.is_authenticated and current_user.is_admin
     has_valid_token = token is not None and user is not None
     
     if not (is_owner or is_admin or has_valid_token):
