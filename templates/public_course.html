@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.course_title }} (Shared){% endblock %}
+
+{% block content %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const saveCourseBtn = document.getElementById('saveCourseBtn');
+    const saveStatus = document.getElementById('saveStatus');
+    
+    if (saveCourseBtn) {
+        saveCourseBtn.addEventListener('click', async function() {
+            const courseId = this.getAttribute('data-course-id');
+            const originalText = this.innerHTML;
+            
+            // Disable button and show processing state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            saveStatus.textContent = 'Saving course...';
+            saveStatus.style.display = 'block';
+            saveStatus.className = 'mt-2 text-info';
+            
+            try {
+                const response = await fetch(`/course/${courseId}/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.redirect_url) {
+                    saveStatus.textContent = 'Course saved successfully! Redirecting...';
+                    saveStatus.className = 'mt-2 text-success';
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Failed to save course');
+                }
+            } catch (error) {
+                console.error('Error saving course:', error);
+                saveStatus.textContent = 'Error: ' + (error.message || 'Failed to save course');
+                saveStatus.className = 'mt-2 text-danger';
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+    }
+});
+</script>
+<div class="container">
+    <h1>{{ course.course_title }}</h1>
+    <p class="text-muted">Shared with you by {{ course.user.full_name or course.user.email }}</p>
+    
+    <div class="course-description">
+        {{ course.description|safe if course.description else 'No description available.' }}
+    </div>
+    
+    <div class="mt-4">
+        <h3>Course Content</h3>
+        <div class="list-group">
+            {% for unit in course.units %}
+                <div class="list-group-item">
+                    <h5>{{ unit.unit_title }}</h5>
+                    <ul class="list-unstyled">
+                        {% for lesson in unit.lessons %}
+                            <li class="ms-3">
+                                <i class="bi bi-file-text"></i> {{ lesson.lesson_title }}
+                                <small class="text-muted">({{ current_user.preferred_lesson_length }} min)</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        {% if current_user.is_authenticated %}
+            <button id="saveCourseBtn" class="btn btn-primary" data-course-id="{{ course.id }}">
+                <i class="bi bi-copy"></i> Save to My Courses
+            </button>
+            <div id="saveStatus" class="mt-2" style="display: none;"></div>
+        {% else %}
+            <div class="alert alert-info">
+                <p>Create a free account to save this course and start learning!</p>
+                <div class="mt-2">
+                    <a href="{{ url_for('register', next=request.url) }}" class="btn btn-primary me-2">
+                        Sign Up Free
+                    </a>
+                    <a href="{{ url_for('login', next=request.url) }}" class="btn btn-outline-secondary">
+                        Log In
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="mt-4 text-muted small">
+        <p>This is a shared link. The course owner can revoke access at any time.</p>
+    </div>
+</div>
+{% endblock %}
