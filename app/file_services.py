@@ -113,8 +113,16 @@ def process_uploaded_file(file):
                 print(f"Warning: Could not remove temporary directory {temp_dir}: {str(e)}")
 
 
-def create_course_from_file_service(file, user):
-    """Create a course from uploaded file content."""
+def create_course_from_file_service(file, user, instructions='', include_background=True):
+    """
+    Create a course from uploaded file content.
+    
+    Args:
+        file: Uploaded file object
+        user: User object creating the course
+        instructions: Optional instructions for course generation
+        include_background: Whether to include user's personal background in course generation
+    """
     # Extract text from file
     extracted_text, error = process_uploaded_file(file)
     if error:
@@ -128,9 +136,12 @@ def create_course_from_file_service(file, user):
     if "Error:" in course_title:
         course_title = "Course from Uploaded Document"
     
-    # Generate course structure from extracted text
+    # Generate course structure from extracted text with instructions and user context
     prompt = CoursePromptBuilder.build_course_structure_from_content_prompt(
-        extracted_text, user.language, user
+        content=extracted_text,
+        language=user.language,
+        user_profile=user if include_background else None,
+        instructions=instructions
     )
     
     raw_output, tokens = ask_ai(prompt, model="gpt-4o", json_mode=True)

@@ -140,28 +140,41 @@ class AnswerPromptBuilder:
                 f'User\'s Answer: {answer}?\n'
             )
         else:
+            # For multiple choice questions
+            options_str = '\n'.join([f"{k}: {v}" for k, v in options.items()])
             return (
                 f'Reply with "correct" or "incorrect" in {language}. Then, briefly explain your reasoning in {language}.\n'
                 f'Question: {question}\n'
-                f'Options: {str(options)}'
-                f'User\'s Answer: {answer}?\n'
+                f'Options:\n{options_str}\n'
+                f'User\'s Answer: {answer}'
             )
-
 
 class CoursePromptBuilder:
     @staticmethod
-    def build_course_structure_from_content_prompt(content, language="english", user_profile=None):
-        """Build a course structure from uploaded content like PDFs."""
+    def build_course_structure_from_content_prompt(content, language="english", user_profile=None, instructions=''):
+        """
+        Build a course structure from uploaded content like PDFs.
+        
+        Args:
+            content: The content to base the course on
+            language: Language for the course content
+            user_profile: Optional user profile for personalization
+            instructions: Additional instructions for course generation
+        """
         user_context_string = ""
         if user_profile:
             profile_details = []
-            if user_profile.age:
+            if hasattr(user_profile, 'age') and user_profile.age:
                 profile_details.append(f"Age: {user_profile.age}")
-            if user_profile.bio:
+            if hasattr(user_profile, 'bio') and user_profile.bio:
                 profile_details.append(f"Bio: '{user_profile.bio}'")
             if profile_details:
-                user_context_string = f"- Personalize the course for the following user profile: {'; '.join(profile_details)}."
-
+                user_context_string = f"- Personalize the course for the following user profile: {'; '.join(profile_details)}.\n"
+        
+        # Add instructions if provided
+        instructions_string = ""
+        if instructions:
+            instructions_string = f"- Follow these specific instructions for course creation: {instructions}\n"
         return f"""
             You have been provided with the following content from an uploaded document:
 
@@ -175,6 +188,7 @@ class CoursePromptBuilder:
             - Each unit should contain multiple lessons with estimated completion times.
             - Include a test for each unit to assess understanding.
             {user_context_string}
+            {instructions_string}
             - Your entire response MUST be a valid JSON object.
             - Generate the user-visible string values in the JSON (like course_title, unit_title, lesson_title, test_title) in the following language: {language}.
             - Keep all JSON keys (like "course_title", "units", "lessons", "estimated_time_minutes", "test", "test_title") in English.

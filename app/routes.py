@@ -1214,8 +1214,17 @@ def upload_course():
         return redirect(url_for('home'))
     
     try:
-        # Create course from uploaded file
-        new_course, error = create_course_from_file_service(file, current_user)
+        # Get form data
+        instructions = request.form.get('instructions', '')
+        include_background = request.form.get('include_background') == '1'
+        
+        # Create course from uploaded file with instructions and background preference
+        new_course, error = create_course_from_file_service(
+            file=file,
+            user=current_user,
+            instructions=instructions,
+            include_background=include_background
+        )
         
         if error:
             flash(f'Error creating course: {error}', 'danger')

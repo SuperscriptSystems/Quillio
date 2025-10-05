@@ -49,6 +49,30 @@
           <div class="current-value" id="slider-value">{% if lang == 'russian' %}Текущее: 50{% else %}Current: 50{% endif %}</div>
           <h3>{% if lang == 'russian' %}Давайте выясним, что вы знаете по этой теме{% else %}Let's find out what you know on this topic{% endif %}</h3>
         </div>
+        
+        <!-- Advanced Settings Toggle -->
+        <div class="advanced-toggle" style="margin: 20px 0; text-align: right;">
+          <a href="#" id="toggle-advanced" style="color: #5cb85c; text-decoration: none; font-size: 0.9em;">
+            {% if lang == 'russian' %}⚙️ Дополнительные настройки{% else %}⚙️ Advanced Settings{% endif %}
+          </a>
+        </div>
+        
+        <!-- Advanced Settings Section -->
+        <div id="advanced-settings" style="display: none; margin: 20px 0; padding: 15px; background: #2A3F4A; border-radius: 8px; border: 1px solid #4a5e6a;">
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+              <input type="checkbox" id="include_background" name="include_background" value="1" 
+                     style="margin-right: 10px; width: auto;">
+              <label for="include_background" style="color: #F0F0F0; cursor: pointer; margin: 0;">
+                {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
+              </label>
+            </div>
+            <div style="font-size: 0.85em; color: #a0aec0; margin-left: 24px;">
+              {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные из вашего профиля{% else %}Will use: age, bio, and other details from your profile{% endif %}
+            </div>
+          </div>
+        </div>
+        
         <button type="submit">{% if lang == 'russian' %}Начать оценку{% else %}Start Assessment{% endif %}</button>
       </form>
 
@@ -61,7 +85,6 @@
       </div>
 
       <!-- File Upload Section -->
-      <div style="margin-top: 30px;">
         <h2>{% if lang == 'russian' %}Загрузить документ{% else %}Upload Document{% endif %}</h2>
         <p style="color: #E0E0E0; text-align: center; margin-bottom: 20px;">
           {% if lang == 'russian' %}Загрузите PDF-файл для создания курса на основе его содержания{% else %}Upload a PDF file to create a course based on its content{% endif %}
@@ -70,26 +93,58 @@
         <form method="POST" action="{{ url_for('upload_course') }}" enctype="multipart/form-data" id="upload-form">
           <div style="margin-bottom: 20px;">
             <label for="file" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
-              {% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}
+              {% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}<span style="color: #ff6b6b;">*</span>
             </label>
             <input type="file" id="file" name="file" accept=".pdf" required
                    style="width: 100%; padding: 12px; border: 2px dashed #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; cursor: pointer;">
           </div>
 
-          <button type="submit" style="background: #17a2b8; margin-top: 10px;">
+          <div style="margin-bottom: 20px;">
+            <label for="instructions" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
+              {% if lang == 'russian' %}Инструкции к курсу (необязательно):{% else %}Course Instructions (optional):{% endif %}
+            </label>
+            <textarea id="instructions" name="instructions" rows="4" 
+                      style="width: 100%; padding: 12px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; resize: vertical;"
+                      placeholder="{% if lang == 'russian' %}Например: Сделайте акцент на практических примерах, включите тесты после каждого раздела{% else %}E.g., Focus on practical examples, include tests after each section{% endif %}"></textarea>
+          </div>
+
+          <!-- Advanced Settings Toggle -->
+          <div class="advanced-toggle" style="margin: 20px 0; text-align: right;">
+            <a href="#" id="toggle-advanced-upload" style="color: #5cb85c; text-decoration: none; font-size: 0.9em;">
+              {% if lang == 'russian' %}⚙️ Дополнительные настройки{% else %}⚙️ Advanced Settings{% endif %}
+            </a>
+          </div>
+          
+          <!-- Advanced Settings Section -->
+          <div id="advanced-settings-upload" style="display: none; margin: 20px 0; padding: 15px; background: #2A3F4A; border-radius: 8px; border: 1px solid #4a5e6a;">
+            <div style="margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <input type="checkbox" id="include_background_upload" name="include_background" value="1" 
+                       style="margin-right: 10px; width: auto;">
+                <label for="include_background_upload" style="color: #F0F0F0; cursor: pointer; margin: 0;">
+                  {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
+                </label>
+              </div>
+              <div style="font-size: 0.85em; color: #a0aec0; margin-left: 24px;">
+                {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные из вашего профиля{% else %}Will use: age, bio, and other details from your profile{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" style="background: #17a2b8; margin-top: 10px; width: 100%;">
             {% if lang == 'russian' %}Создать курс из файла{% else %}Create Course from File{% endif %}
           </button>
         </form>
       </div>
     </div>
-</div>
+  </div>
 
-<div id="loading">
+  <div id="loading">
     <p id="loading-text">{% if lang == 'russian' %}🧪 Готовим вашу персональную оценку...{% else %}🧪 Preparing your custom assessment...{% endif %}</p>
     <div id="spinner"></div>
-</div>
+  </div>
 
-<script>
+  <script>
     const assessmentForm = document.getElementById('assessment-form');
     const uploadForm = document.getElementById('upload-form');
     const loading = document.getElementById('loading');
@@ -130,5 +185,27 @@
         const prefix = lang === 'russian' ? 'Текущее: ' : 'Current: ';
         valueDisplay.textContent = prefix + slider.value;
     });
+    
+    // Toggle advanced settings for assessment form
+    const toggleAdvanced = document.getElementById('toggle-advanced');
+    const advancedSettings = document.getElementById('advanced-settings');
+    
+    if (toggleAdvanced && advancedSettings) {
+        toggleAdvanced.addEventListener('click', function(e) {
+            e.preventDefault();
+            advancedSettings.style.display = advancedSettings.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+    
+    // Toggle advanced settings for upload form
+    const toggleAdvancedUpload = document.getElementById('toggle-advanced-upload');
+    const advancedSettingsUpload = document.getElementById('advanced-settings-upload');
+    
+    if (toggleAdvancedUpload && advancedSettingsUpload) {
+        toggleAdvancedUpload.addEventListener('click', function(e) {
+            e.preventDefault();
+            advancedSettingsUpload.style.display = advancedSettingsUpload.style.display === 'none' ? 'block' : 'none';
+        });
+    }
 </script>
 {% endblock %}
