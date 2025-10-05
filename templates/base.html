@@ -46,12 +46,20 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Roboto', sans-serif;
             background: #2A3F4A;
             color: #F0F0F0;
-            margin: 0;
-            padding: 0;
+            overflow-y: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         .top-nav {
             background: #344955;

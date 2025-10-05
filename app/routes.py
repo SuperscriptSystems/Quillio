@@ -449,14 +449,14 @@ def public_certificate(course_id, token=None):
     # 2. The user is an admin
     # 3. The request includes a valid share token
     is_owner = user and user.id == course.user_id
-    is_admin = current_user.is_authenticated and current_user.is_admin()
+    is_admin = current_user.is_authenticated and current_user.is_admin
     has_valid_token = token is not None and user is not None
     
     if not (is_owner or is_admin or has_valid_token):
         flash("You don't have permission to view this certificate.", "danger")
         return redirect(url_for('home'))
     
-    completion_date = dt.now().strftime("%B %d, %Y")
+    completion_date = datetime.now().strftime("%B %d, %Y")
     completion_score = 100  # Default to 100% for now, can be calculated based on test results if available
     
     # Generate shareable link
