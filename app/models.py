@@ -183,12 +183,30 @@ class UnitTestResult(db.Model):
     course_id = db.Column(GUID(), db.ForeignKey('courses.id'), nullable=False)
     unit_title = db.Column(db.String, nullable=False)
     score = db.Column(db.Integer, nullable=False)
-
     user = db.relationship('User', backref=db.backref('unit_test_results', lazy=True, cascade="all, delete-orphan"))
     course = db.relationship('Course', backref=db.backref('unit_test_results', lazy=True, cascade="all, delete-orphan"))
 
     __table_args__ = (db.UniqueConstraint('user_id', 'course_id', 'unit_title', name='_user_course_unit_uc'),)
 
+
+class CourseShare(db.Model):
+    __tablename__ = 'course_shares'
+    id = db.Column(GUID(), primary_key=True, default=uuid.uuid4)
+    course_id = db.Column(GUID(), db.ForeignKey('courses.id'), nullable=False)
+    token = db.Column(db.String(32), unique=True, nullable=False)
+    created_by = db.Column(GUID(), db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    
+    # Relationships
+    course = db.relationship('Course', backref=db.backref('shares', lazy=True))
+    created_by_user = db.relationship('User', backref=db.backref('shared_courses', lazy=True))
+    
+    def is_valid(self):
+        return self.is_active and datetime.utcnow() < self.expires_at
+
+
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, user_id)
+    return User.query.get(user_id)

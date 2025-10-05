@@ -23,7 +23,149 @@
     .certificate-btn { display: inline-block; background: #f0ad4e; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-bottom: 20px; transition: background-color 0.3s; }
     .certificate-btn:hover { background: #d4963c; text-decoration: none; }
 
-    #edit-course-btn { background: #5bc0de; color: white; border: none; border-radius: 5px; padding: 8px 15px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-decoration: none; }
+    #edit-course-btn { 
+        background: #5bc0de; 
+        color: white; 
+        border: none; 
+        border-radius: 5px; 
+        padding: 8px 15px; 
+        font-size: 16px; 
+        cursor: pointer; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+        text-decoration: none; 
+        margin-right: 10px;
+    }
+    
+    .share-dropdown {
+        position: relative;
+        display: inline-block;
+        margin-right: 10px;
+        z-index: 1000;
+    }
+    
+    .share-btn {
+        background: #2c4a5b;
+        color: #ffffff;
+        border: 1px solid #3a6a80;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .share-btn:hover {
+        background: #3a6a80;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .share-btn i {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+    
+    .share-dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #2a3f4a;
+        min-width: 350px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        z-index: 1001;
+        border-radius: 8px;
+        padding: 15px;
+        right: 0;
+        margin-top: 8px;
+        border: 1px solid #3a6a80;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .share-dropdown:hover .share-dropdown-content {
+        display: block;
+    }
+    
+    .share-dropdown h4 {
+        color: #f0f0f0;
+        margin: 0 0 12px 0;
+        font-size: 15px;
+        font-weight: 500;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #3a6a80;
+    }
+    
+    .share-link-container {
+        display: flex;
+        margin-top: 12px;
+    }
+    
+    .share-link-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #3a6a80;
+        border-radius: 6px 0 0 6px;
+        background: #1e2e38;
+        color: #f0f0f0;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .share-link-input:focus {
+        outline: none;
+        border-color: #5bc0de;
+        box-shadow: 0 0 0 2px rgba(91, 192, 222, 0.25);
+    }
+    
+    .copy-link-btn {
+        background: #5bc0de;
+        color: white;
+        border: none;
+        border-radius: 0 6px 6px 0;
+        padding: 0 15px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
+    }
+    
+    .copy-link-btn:hover {
+        background: #4aa8c4;
+    }
+    
+    .copy-link-btn:active {
+        transform: translateY(1px);
+    }
+    
+    .copy-status {
+        color: #5cb85c;
+        font-size: 13px;
+        margin-top: 8px;
+        text-align: center;
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .copy-link-btn:hover {
+        background: #4ba8c8;
+    }
+    .button-group {
+        display: flex;
+        margin-bottom: 20px;
+    }
     .btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; margin-left: 10px; }
     .btn-outline-secondary { border: 1px solid #6c757d; color: #6c757d; background: transparent; }
     .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
@@ -42,7 +184,29 @@
 
 <div class="container">
     {% if current_user.is_authenticated and current_user.id == course_obj.user_id %}
+    <div class="button-group">
         <a href="#" id="edit-course-btn" title="Edit Course with AI">{% if lang == 'russian' %}Обновить курс{% else %}Update Course{% endif %}</a>
+        
+        <div class="share-dropdown">
+            <button class="share-btn" title="Share Course">
+                <i class="bi bi-share"></i> 
+                {% if lang == 'russian' %}Поделиться{% else %}Share{% endif %}
+            </button>
+            <div class="share-dropdown-content">
+                <h5>{% if lang == 'russian' %}Поделиться курсом{% else %}Share this course{% endif %}</h5>
+                <p class="small text-muted">{% if lang == 'russian' %}Отправьте эту ссылку, чтобы поделиться курсом{% else %}Send this link to share the course{% endif %}</p>
+                <div class="share-link-container">
+                    <input type="text" id="share-link" class="share-link-input" readonly>
+                    <button class="copy-link-btn" id="copy-share-link">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+                <div id="copy-status" class="small text-success mt-1" style="display: none;">
+                    <i class="bi bi-check-circle"></i> {% if lang == 'russian' %}Скопировано!{% else %}Copied!{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
     
     <h1 id="course-title">{{ course.course_title | shorten_title }}</h1>
@@ -149,6 +313,44 @@
 </div>
 
 {% block modals %}
+<!-- Share Course Modal -->
+<div id="share-modal-overlay" style="display: none;">
+    <div id="share-modal" style="background: #2A3F4A; padding: 30px; border-radius: 10px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+        <h2 style="margin-top: 0; color: #F0F0F0;">{% if lang == 'russian' %}Поделиться курсом{% else %}Share Course{% endif %}</h2>
+        
+        <div class="share-method" style="margin-bottom: 20px;">
+            <h3 style="color: #F0F0F0;">{% if lang == 'russian' %}Отправить по электронной почте{% else %}Send via Email{% endif %}</h3>
+            <div style="display: flex; margin-top: 10px;">
+                <input type="email" id="share-email" placeholder="email@example.com" style="flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #4a5e6a; background: #344955; color: #F0F0F0;">
+                <button id="send-share-email" style="margin-left: 10px; padding: 10px 20px; background: #5cb85c; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    {% if lang == 'russian' %}Отправить{% else %}Send{% endif %}
+                </button>
+            </div>
+            <div id="email-status" style="margin-top: 10px; color: #5cb85c; display: none;"></div>
+        </div>
+        
+        <div class="share-method" style="margin-bottom: 20px;">
+            <h3 style="color: #F0F0F0;">{% if lang == 'russian' %}Скопировать ссылку{% else %}Copy Link{% endif %}</h3>
+            <div style="display: flex; margin-top: 10px;">
+                <input type="text" id="share-link" readonly style="flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #4a5e6a; background: #344955; color: #F0F0F0;">
+                <button id="copy-share-link" style="margin-left: 10px; padding: 10px 20px; background: #5bc0de; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    {% if lang == 'russian' %}Копировать{% else %}Copy{% endif %}
+                </button>
+            </div>
+            <div id="copy-status" style="margin-top: 10px; color: #5cb85c; display: none;">
+                {% if lang == 'russian' %}Ссылка скопирована в буфер обмена{% else %}Link copied to clipboard{% endif %}!
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button id="close-share-modal" style="padding: 8px 15px; background: #d9534f; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                {% if lang == 'russian' %}Закрыть{% else %}Close{% endif %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Course Modal -->
 <div id="edit-modal-overlay">
     <div id="edit-modal">
         <h2>AI Course Editor</h2>
@@ -173,8 +375,60 @@
 console.log('Course page script loaded');
 
 // Handle Edit Course Button
+// Share Course Functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded');
+    
+    const shareLinkInput = document.getElementById('share-link');
+    const copyLinkBtn = document.getElementById('copy-share-link');
+    const copyStatus = document.getElementById('copy-status');
+    
+    // Generate share link when dropdown is opened
+    const shareDropdown = document.querySelector('.share-dropdown');
+    if (shareDropdown) {
+        shareDropdown.addEventListener('mouseenter', function() {
+            if (!shareLinkInput.value) {
+                // Generate a share link
+                fetch('{{ url_for("share_course") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        course_id: '{{ course_obj.id }}'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        shareLinkInput.value = data.share_link;
+                    } else {
+                        console.error('Failed to generate share link:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating share link:', error);
+                });
+            }
+        });
+    }
+    
+    // Copy share link
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', function() {
+            if (shareLinkInput.value) {
+                shareLinkInput.select();
+                document.execCommand('copy');
+                
+                // Show success message
+                copyStatus.style.display = 'block';
+                setTimeout(() => {
+                    copyStatus.style.display = 'none';
+                }, 2000);
+            }
+        });
+    }
     
     // Edit Course Button
     const editBtn = document.getElementById('edit-course-btn');

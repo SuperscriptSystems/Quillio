@@ -8,7 +8,7 @@ from app.admin_utils import admin_required, get_available_models
 from datetime import datetime, timedelta
 from app.forms import LoginForm, RegistrationForm, VerificationForm
 from app.configuration import app, db
-from app.models import User, Course, Lesson, UnitTestResult
+from app.models import User, Course, Lesson, UnitTestResult, CourseShare
 from app.services import (
     generate_test_service,
     evaluate_answers_service,
@@ -553,10 +553,84 @@ The Quill.io Team"""
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-    return render_template('certificate.html',
-                           user_name=(current_user.full_name or current_user.email),
-                           course_title=course.course_title,
-                           completion_date=completion_date)
+
+@app.route('/share-course', methods=['POST'])
+@login_required
+def share_course():
+    data = request.get_json()
+    course_id = data.get('course_id')
+    
+    if not course_id:
+        return jsonify({'success': False, 'error': 'Missing course_id'}), 400
+
+    try:
+        # Check if course exists and user has access
+        course = Course.query.get(course_id)
+        if not course or course.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Course not found or access denied'}), 404
+
+        # Check if we already have a valid share token for this course
+        share = CourseShare.query.filter(
+            CourseShare.course_id == course_id,
+            CourseShare.created_by == current_user.id,
+            CourseShare.expires_at > datetime.utcnow(),
+            CourseShare.is_active == True
+        ).first()
+
+        # If we don't have a valid share token, create one
+        if not share:
+            share_token = secrets.token_urlsafe(16)
+            share = CourseShare(
+                course_id=course_id,
+                token=share_token,
+                created_by=current_user.id,
+                expires_at=datetime.utcnow() + timedelta(days=30)  # Token expires in 30 days
+            )
+            db.session.add(share)
+            db.session.commit()
+
+        # Create the shareable link
+        share_link = url_for('public_course', course_id=course_id, token=share.token, _external=True)
+
+        return jsonify({
+            'success': True, 
+            'share_link': share_link,
+            'course_title': course.course_title
+        })
+
+    except Exception as e:
+        app.logger.error(f'Error in share_course: {str(e)}')
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+@app.route('/course/public/<uuid:course_id>', methods=['GET'])
+def public_course(course_id):
+    """Public view of a course with a share token"""
+    token = request.args.get('token')
+    if not token:
+        flash('This is a private course. Please log in to view it.', 'info')
+        return redirect(url_for('login', next=request.url))
+    
+    # Verify the token
+    share = CourseShare.query.filter(
+        CourseShare.course_id == str(course_id),
+        CourseShare.token == token,
+        CourseShare.expires_at > datetime.utcnow(),
+        CourseShare.is_active == True
+    ).first()
+    
+    if not share:
+        flash('Invalid or expired share link', 'error')
+        return redirect(url_for('login'))
+    
+    # Get the course with all necessary data
+    course = Course.query.get_or_404(course_id)
+    
+    # Render a simplified view of the course
+    return render_template('public_course.html', 
+                         course=course,
+                         share_link=request.url,
+                         is_owner=False)
 
 
 # --- Initial Assessment Routes ---
