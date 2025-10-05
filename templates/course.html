@@ -213,12 +213,12 @@
 
     {% if current_user.is_authenticated %}
         {% if is_course_complete %}
-            <a href="{{ url_for('show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
+            <a href="{{ url_for('course.show_certificate', course_id=course_obj.id) }}" class="certificate-btn">
                 🏆 {% if lang == 'russian' %}Посмотреть сертификат{% else %}View Certificate{% endif %}
             </a>
         {% endif %}
     {% else %}
-        <a href="{{ url_for('register', next=request.path) }}" class="btn btn-primary">
+        <a href="{{ url_for('auth.register', next=request.path) }}" class="btn btn-primary">
             {% if lang == 'russian' %}Зарегистрироваться, чтобы начать курс{% else %}Sign up to take this course{% endif %}
         </a>
     {% endif %}
@@ -232,7 +232,7 @@
                     {% set lesson_obj = all_lessons.get(lesson_data.lesson_title) %}
                     {% if lesson_obj %}
                         <li class="{{ 'completed' if lesson_obj.is_completed }}">
-                            <a href="{{ url_for('loading_lesson', lesson_id=lesson_obj.id) }}">{{ lesson_obj.lesson_title }}</a>
+                            <a href="{{ url_for('lesson.loading_lesson', lesson_id=lesson_obj.id) }}">{{ lesson_obj.lesson_title }}</a>
                             <span class="lesson-time">~{{ current_user.preferred_lesson_length }} {% if lang == 'russian' %}мин{% else %}mins{% endif %}</span>
                         </li>
                     {% endif %}
@@ -241,7 +241,7 @@
             <h3>📝 {% if lang == 'russian' %}Тест{% else %}Test{% endif %}</h3>
 
             <div class="test-container">
-                <a href="{{ url_for('loading_unit_test', course_id=course_id, unit_title=unit['unit_title'], test_title=unit['test']['test_title']) }}">{{ unit['test']['test_title'] }}</a>
+                <a href="{{ url_for('assessment.loading_unit_test', course_id=course_id, unit_title=unit['unit_title'], test_title=unit['test']['test_title']) }}">{{ unit['test']['test_title'] }}</a>
                 {% if unit.unit_title in scores %}
                     <span class="test-score">{{ scores[unit.unit_title] }}%</span>
                 {% endif %}
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
         shareDropdown.addEventListener('mouseenter', function() {
             if (!shareLinkInput.value) {
                 // Generate a share link
-                fetch('{{ url_for("share_course") }}', {
+                fetch('{{ url_for("course.share_course") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (thinking) thinking.style.display = 'block';
             if (saveBtn) saveBtn.disabled = true;
             
-            fetch("{{ url_for('edit_course', course_id=course_obj.id) }}", {
+            fetch("{{ url_for('course.edit_course', course_id=course_obj.id) }}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
