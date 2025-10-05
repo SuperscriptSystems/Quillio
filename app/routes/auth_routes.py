@@ -7,9 +7,30 @@ from app.configuration import app, db
 from app.forms import LoginForm, RegistrationForm, VerificationForm, ForgotPasswordForm, ResetPasswordForm
 from app.email_service import send_verification_email, send_password_reset_email
 from app.models import User
+from app.services.password_service import change_user_password
+
+
 
 auth_bp = Blueprint('auth', __name__)
 
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    if not current_user.is_verified:
+        flash('Please verify your email before changing your password.', 'error')
+        return redirect(url_for('settings'))
+
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if new_password != confirm_password:
+        flash('New passwords do not match.', 'error')
+        return redirect(url_for('settings'))
+
+    success, message = change_user_password(current_user, current_password, new_password)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('settings'))
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
