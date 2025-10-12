@@ -59,7 +59,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('register') }}">
+        <form method="POST" action="{{ url_for('auth.register') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Account credentials -->
             <input type="email" name="email" placeholder="Enter your Email" required>
@@ -76,7 +76,7 @@
             <textarea name="bio" rows="3" placeholder="Short Bio (optional)"></textarea>
             <button type="submit">Register</button>
         </form>
-        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
     </div>
 </body>
 </html>

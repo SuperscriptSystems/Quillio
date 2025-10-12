@@ -84,15 +84,15 @@
 </style>
 
 <div class="admin-container">
-    <a href="{{ url_for('course_dashboard') }}" class="back-btn">← Back to Dashboard</a>
-    
+    <a href="{{ url_for('course.course_dashboard') }}" class="back-btn">← Back to Dashboard</a>
+
     <h1>🔧 Admin Dashboard</h1>
     <p>Manage AI models and regenerate content for all courses</p>
 
     <div class="admin-section">
         <h2>Available AI Models</h2>
         <p>These models are available for course and lesson generation/regeneration:</p>
-        
+
         {% for model_key, model_info in models.items() %}
         <div class="model-card">
             <div class="model-name">{{ model_info.name }}</div>
@@ -105,7 +105,7 @@
     <div class="admin-section">
         <h2>Admin Features</h2>
         <p>As an administrator, you have access to advanced content regeneration features:</p>
-        
+
         <div class="instructions-box">
             <h3>🎯 How to Use Admin Features:</h3>
             <ul style="color: #E0E0E0; line-height: 1.6;">
@@ -130,8 +130,8 @@
         <h2>Quick Actions</h2>
         <p>Navigate to content management:</p>
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <a href="{{ url_for('course_dashboard') }}" style="background: #5cb85c; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">📚 View All Courses</a>
-            <a href="{{ url_for('home') }}" style="background: #f0ad4e; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">➕ Create New Course</a>
+            <a href="{{ url_for('course.course_dashboard') }}" style="background: #5cb85c; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">📚 View All Courses</a>
+            <a href="{{ url_for('course.home') }}" style="background: #f0ad4e; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">➕ Create New Course</a>
         </div>
     </div>
 </div>

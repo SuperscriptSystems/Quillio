@@ -161,7 +161,7 @@ min-height: 100vh;
 <body>
     <div class="container">
         <h1>{% if lang == 'russian' %}Вопрос {{ current }} из {{ total }}{% else %}Question {{ current }} of {{ total }}{% endif %}</h1>
-        <form method="post" action="{{ url_for('unit_test') }}">
+        <form method="post" action="{{ url_for('assessment.unit_test') }}">
             {{ form.hidden_tag() }}
             <h3><span class="q-icon">*</span>{{ test_page.question }}</h3>
             <input type="hidden" name="question" value="{{ test_page.question }}">

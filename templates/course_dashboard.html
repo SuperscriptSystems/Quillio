@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const currentTitle = titleElement.textContent.trim();
         
         try {
-            const response = await fetch(`/course/${courseId}/edit`, {
+            const response = await fetch(`/edit_course/${courseId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function improveTitle(courseId, currentTitle) {
     try {
-        const response = await fetch(`/course/${courseId}/edit`, {
+        const response = await fetch(`/edit_course/${courseId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ async function improveTitle(courseId, currentTitle) {
     <div class="header">
         <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
         {% if current_user.is_admin %}
-            <a href="{{ url_for('admin_dashboard') }}" class="admin-button">🔧 Admin</a>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-button">🔧 Admin</a>
         {% endif %}
     </div>
 
@@ -172,12 +172,12 @@ async function improveTitle(courseId, currentTitle) {
                 {% set progress_percent = (course.completed_lessons / total_lessons * 100) if total_lessons > 0 else 0 %}
                 <li class="course-item">
                     <div class="course-info">
-                        <a href="{{ url_for('show_course', course_id=course.id) }}" id="course-title-{{ course.id }}" class="course-title">{{ course.course_title | shorten_title }}</a>
+                        <a href="{{ url_for('course.show_course', course_id=course.id) }}" id="course-title-{{ course.id }}" class="course-title">{{ course.course_title | shorten_title }}</a>
                         <div class="course-actions">
                             {% if progress_percent >= 100 %}
-                                <a href="{{ url_for('show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
+                                <a href="{{ url_for('course.show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
                             {% endif %}
-                            <form class="archive-form" action="{{ url_for('archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
+                            <form class="archive-form" action="{{ url_for('course.archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
                                 <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
                             </form>
                         </div>
@@ -194,7 +194,7 @@ async function improveTitle(courseId, currentTitle) {
         </div>
     {% endif %}
     <div class="new-course-wrapper">
-        <a href="{{ url_for('home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
+        <a href="{{ url_for('course.home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
     </div>
  </div>
  {% endblock %}

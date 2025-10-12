@@ -34,7 +34,7 @@
       <h1>{% if lang == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}</h1>
 
       <!-- Assessment Form -->
-      <form method="POST" action="{{ url_for('assessment') }}" id="assessment-form">
+      <form method="POST" action="{{ url_for('assessment.assessment') }}" id="assessment-form">
         <label for="topic">{% if lang == 'russian' %}О чем бы вы хотели узнать?{% else %}What would you like to learn about?{% endif %}</label>
         <textarea id="topic" name="topic" placeholder="{% if lang == 'russian' %}Например, декораторы Python, история Второй мировой войны...{% else %}E.g. Python decorators, World War II history...{% endif %}" required></textarea>
 
@@ -90,7 +90,7 @@
           {% if lang == 'russian' %}Загрузите PDF-файл для создания курса на основе его содержания{% else %}Upload a PDF file to create a course based on its content{% endif %}
         </p>
 
-        <form method="POST" action="{{ url_for('upload_course') }}" enctype="multipart/form-data" id="upload-form">
+        <form method="POST" action="{{ url_for('file.upload_course') }}" enctype="multipart/form-data" id="upload-form">
           <div style="margin-bottom: 20px;">
             <label for="file" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
               {% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}<span style="color: #ff6b6b;">*</span>

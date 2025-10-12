@@ -88,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="alert alert-info">
                 <p>Create a free account to save this course and start learning!</p>
                 <div class="mt-2">
-                    <a href="{{ url_for('register', next=request.url) }}" class="btn btn-primary me-2">
+                    <a href="{{ url_for('auth.register', next=request.url) }}" class="btn btn-primary me-2">
                         Sign Up Free
                     </a>
-                    <a href="{{ url_for('login', next=request.url) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('auth.login', next=request.url) }}" class="btn btn-outline-secondary">
                         Log In
                     </a>
                 </div>

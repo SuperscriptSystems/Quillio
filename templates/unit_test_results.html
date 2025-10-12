@@ -85,7 +85,7 @@
         {% endfor %}
     </div>
     <div class="actions">
-        <a href="{{ url_for('show_course', course_id=course_id) }}">{% if lang == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
+        <a href="{{ url_for('course.show_course', course_id=course_id) }}">{% if lang == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
     </div>
 </div>
 {% endblock %}

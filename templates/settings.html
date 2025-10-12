@@ -80,7 +80,7 @@
 
 <div class="container">
     <h1>{% if lang == 'russian' %}Настройки пользователя{% else %}User Settings{% endif %}</h1>
-    <form method="POST" action="{{ url_for('settings') }}">
+    <form method="POST" action="{{ url_for('course.settings') }}">
         <label for="lesson_length">{% if lang == 'russian' %}Идеальная длина урока (в минутах){% else %}Ideal Lesson Length (in minutes){% endif %}</label>
         <input type="number" id="lesson_length" name="lesson_length" value="{{ current_user.preferred_lesson_length }}" min="5" max="60" required>
 
@@ -107,13 +107,13 @@
         <div class="verification-notice">
             <strong>{% if lang == 'russian' %}Внимание:{% else %}Notice:{% endif %}</strong>
             {% if lang == 'russian' %}Вы должны подтвердить свой email перед изменением пароля.{% else %}You must verify your email before changing your password.{% endif %}
-            <a href="{{ url_for('resend_verification') }}">
+            <a href="{{ url_for('auth.resend_verification') }}">
                 {% if lang == 'russian' %}Отправить код подтверждения повторно{% else %}Resend verification code{% endif %}
             </a>
         </div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('change_password') }}" {% if not current_user.is_verified %}class="disabled-form"{% endif %}>
+        <form method="POST" action="{{ url_for('auth.change_password') }}" {% if not current_user.is_verified %}class="disabled-form"{% endif %}>
             <label for="current_password">{% if lang == 'russian' %}Текущий пароль{% else %}Current Password{% endif %}</label>
             <input type="password" id="current_password" name="current_password" required {% if not current_user.is_verified %}disabled{% endif %}>
 

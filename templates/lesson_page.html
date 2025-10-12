@@ -148,7 +148,7 @@
         <div class="content" id="lesson-content" data-lesson-id="{{ lesson_id }}">
             {{ content|safe }}
         </div>
-        <a href="{{ url_for('show_course', course_id=course_id) }}" class="back-button">{% if current_user.language == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
+        <a href="{{ url_for('course.show_course', course_id=course_id) }}" class="back-button">{% if current_user.language == 'russian' %}Назад к курсу{% else %}Back to Course{% endif %}</a>
     </div>
 
     <!-- NEW: Chat Widget HTML -->
@@ -212,7 +212,7 @@
                 };
                 
                 console.log('Sending request to server:', {
-                    url: "{{ url_for('chat_with_tutor') }}",
+                    url: "{{ url_for('ai.chat_with_tutor') }}",
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestData, null, 2)
@@ -221,7 +221,7 @@
                 // Get CSRF token from meta tag
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 
-                const response = await fetch("{{ url_for('chat_with_tutor') }}", {
+                const response = await fetch("{{ url_for('ai.chat_with_tutor') }}", {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',

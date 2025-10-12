@@ -70,11 +70,11 @@
         </div>
         
         {% if verification_type == 'login' %}
-            <form method="POST" action="{{ url_for('login_verify_code') }}">
+            <form method="POST" action="{{ url_for('auth.login_verify_code') }}">
         {% elif verification_type == 'password_reset' %}
-            <form method="POST" action="{{ url_for('verify_reset_code') }}">
+            <form method="POST" action="{{ url_for('auth.verify_reset_code') }}">
         {% else %}
-            <form method="POST" action="{{ url_for('verify_code') }}">
+            <form method="POST" action="{{ url_for('auth.verify_code') }}">
         {% endif %}
             {{ form.hidden_tag() }}
             {{ form.email(value=email, type='hidden') }}
@@ -99,8 +99,8 @@
             {% endif %}
         </form>
         
-        <p>Didn't receive the code? <a href="{{ url_for('resend_verification') }}">Resend verification code</a></p>
-        <p><a href="{{ url_for('login') }}">Back to Login</a></p>
+        <p>Didn't receive the code? <a href="{{ url_for('auth.resend_verification') }}">Resend verification code</a></p>
+        <p><a href="{{ url_for('auth.login') }}">Back to Login</a></p>
     </div>
 
     <script>

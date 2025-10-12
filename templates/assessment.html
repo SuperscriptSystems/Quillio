@@ -160,7 +160,7 @@
         {% if test %}
             {% set current_question = test.questions[index] %}
             <h1>Question {{ index + 1 }} of {{ test.questions|length }}</h1>
-            <form method="POST" action="{{ url_for('assessment') }}">
+            <form method="POST" action="{{ url_for('assessment.assessment') }}">
                 {{ form.hidden_tag() }}
                 <h3><span class="q-icon">*</span>{{ current_question.question|safe }}</h3>
                 <input type="hidden" name="question" value="{{ current_question.question }}">
@@ -176,7 +176,7 @@
             </form>
         {% else %}
             <h1>{% if current_user.language == 'russian' %}Начальная оценка{% else %}Initial Assessment{% endif %}</h1>
-            <form method="POST" action="{{ url_for('assessment') }}">
+            <form method="POST" action="{{ url_for('assessment.assessment') }}">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
                     <label for="topic">{% if current_user.language == 'russian' %}Тема{% else %}Topic{% endif %}</label>

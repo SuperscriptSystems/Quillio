@@ -377,12 +377,11 @@ class CourseEditorPromptBuilder:
         title_keywords = ["title", "name", "rename", "call this"]
         is_title_update = any(keyword in user_request.lower() for keyword in title_keywords)
 
-        # If it's a title update, use the fast model for just the title
+        # If it's a title update, use the title improvement prompt
         if is_title_update and "course_title" in current_course_json:
-            return {
-                "course_title": user_request,
-                "units": current_course_json.get("units", [])
-            }
+            return CourseEditorPromptBuilder.build_title_improvement_prompt(
+                current_course_json["course_title"], language
+            )
 
         course_str = json.dumps(current_course_json, indent=2)
 

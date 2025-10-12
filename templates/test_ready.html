@@ -56,7 +56,7 @@ margin: 0;
     <div class="popup">
         <h2>✅ {% if lang == 'russian' %}Ваш тест готов!{% else %}Your Test is Ready!{% endif %}</h2>
         <p>{% if lang == 'russian' %}Нажмите ниже, чтобы начать испытание.{% else %}Click below to begin the challenge.{% endif %}</p>
-        <form action="{{ url_for('assessment') }}" method="get">
+        <form action="{{ url_for('assessment.assessment') }}" method="get">
             <button type="submit">{% if lang == 'russian' %}🚀 Начать{% else %}🚀 Begin{% endif %}</button>
         </form>
     </div>

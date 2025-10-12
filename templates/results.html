@@ -45,7 +45,7 @@ a:hover { background: #4a9a_ia; }
             {{ knowledge_assessment | safe }}
         </div>
         {% if course_id %}
-            <a href="{{ url_for('show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
+            <a href="{{ url_for('course.show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
         {% endif %}
         {% for item in answers %}
             <p><strong>{% if lang == 'russian' %}В:{% else %}Q:{% endif %}</strong> {{ item.question }}<br>
@@ -68,7 +68,7 @@ a:hover { background: #4a9a_ia; }
         {% endfor %}
 
         {% if course_id %}
-            <a href="{{ url_for('show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
+            <a href="{{ url_for('course.show_course', course_id=course_id) }}">{% if lang == 'russian' %}📘 Перейти к вашему персональному курсу{% else %}📘 Go to Your Personalized Course{% endif %}</a>
         {% endif %}
     </div>
 </body>

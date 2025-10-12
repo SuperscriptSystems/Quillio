@@ -61,7 +61,7 @@
 document.addEventListener('DOMContentLoaded', async function () {
     const contentDiv = document.getElementById('lesson-content');
     const spinner = document.getElementById('spinner');
-    const streamUrl = "{{ url_for('stream_lesson_data', lesson_id=lesson.id) }}";
+    const streamUrl = "{{ url_for('lesson.stream_lesson_data', lesson_id=lesson.id) }}";
 
     try {
         const response = await fetch(streamUrl);
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const { value, done } = await reader.read();
             if (done) {
                 // Stream finished, redirect to the final formatted page
-                window.location.href = "{{ url_for('show_lesson', lesson_id=lesson.id) }}";
+                window.location.href = "{{ url_for('lesson.show_lesson', lesson_id=lesson.id) }}";
                 break;
             }
 

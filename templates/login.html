@@ -162,7 +162,7 @@
             {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}" id="login-form">
+        <form method="POST" action="{{ url_for('auth.login') }}" id="login-form">
             {{ form.hidden_tag() }}
             <div class="form-group">
                 {{ form.email(class="form-control", placeholder="Email") }}
@@ -183,8 +183,8 @@
             <button type="submit" class="btn btn-primary btn-block">{{ form.submit.label.text }}</button>
         </form>
 
-        <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up here</a></p>
-        <p>Forgot your password? <a href="{{ url_for('forgot_password') }}">Click to reset</a></p>
+        <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up here</a></p>
+        <p>Forgot your password? <a href="{{ url_for('auth.forgot_password') }}">Click to reset</a></p>
     </div>
 </body>
 </html>

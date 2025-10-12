@@ -222,13 +222,13 @@
     {% if current_user.is_authenticated %}
     <nav class="top-nav">
         <div class="logo">
-            <a href="{{ url_for('course_dashboard') }}">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Quillio Logo" style="height:50px; vertical-align:middle;">
+            <a href="{{ url_for('course.course_dashboard') }}">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Quillio Logo" style="height:50px; vertical-align:middle;">
             </a>
         </div>
         <div class="nav-links">
-            <a href="{{ url_for('course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
-            
+            <a href="{{ url_for('course.course_dashboard') }}">{% if current_user.language == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</a>
+            <a href="{{ url_for('course.home') }}">{% if current_user.language == 'russian' %}Создать курс{% else %}Create Course{% endif %}</a>
             <div class="user-dropdown" id="userDropdown">
                 <div class="user-dropdown-toggle" onclick="toggleUserDropdown()">
                     {% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.full_name or current_user.email.split('@')[0] }}{% else %}Welcome, {{ current_user.full_name or current_user.email.split('@')[0] }}{% endif %}
@@ -237,8 +237,8 @@
                     <div class="user-info">
                         {% if current_user.language == 'russian' %}Добро пожаловать, {{ current_user.full_name or current_user.email.split('@')[0] }}{% else %}Welcome, {{ current_user.full_name or current_user.email.split('@')[0] }}{% endif %}
                     </div>
-                    <a href="{{ url_for('settings') }}">{% if current_user.language == 'russian' %}Настройки{% else %}Settings{% endif %}</a>
-                    <a href="{{ url_for('logout') }}">{% if current_user.language == 'russian' %}Выйти{% else %}Log Out{% endif %}</a>
+                    <a href="{{ url_for('course.settings') }}">{% if current_user.language == 'russian' %}Настройки{% else %}Settings{% endif %}</a>
+                    <a href="{{ url_for('auth.logout') }}">{% if current_user.language == 'russian' %}Выйти{% else %}Log Out{% endif %}</a>
                 </div>
             </div>
         </div>
@@ -261,13 +261,13 @@
     </main>
 
     {% block scripts %}{% endblock %}
-    
+
     {% if current_user.is_authenticated and current_user.is_admin %}
-    <a href="{{ url_for('admin_dashboard') }}" class="admin-link">🔧 Admin</a>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-link">🔧 Admin</a>
     {% endif %}
-    
+
     {% block footer_scripts %}{% endblock %}
-    
+
     <script>
         function toggleUserDropdown() {
             const dropdown = document.getElementById('userDropdown');
@@ -278,7 +278,7 @@
         document.addEventListener('click', function(event) {
             const dropdown = document.getElementById('userDropdown');
             const isClickInsideDropdown = dropdown && dropdown.contains(event.target);
-            
+
             if (!isClickInsideDropdown && dropdown && dropdown.classList.contains('active')) {
                 dropdown.classList.remove('active');
             }
