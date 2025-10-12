@@ -84,7 +84,7 @@
 </style>
 
 <div class="admin-container">
-    <a href="{{ url_for('course.course_dashboard') }}" class="back-btn">← Back to Dashboard</a>
+    <a href="{{ url_for('course_dashboard') }}" class="back-btn">← Back to Dashboard</a>
     
     <h1>🔧 Admin Dashboard</h1>
     <p>Manage AI models and regenerate content for all courses</p>
@@ -130,8 +130,8 @@
         <h2>Quick Actions</h2>
         <p>Navigate to content management:</p>
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <a href="{{ url_for('course.course_dashboard') }}" style="background: #5cb85c; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">📚 View All Courses</a>
-            <a href="{{ url_for('course.home') }}" style="background: #f0ad4e; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">➕ Create New Course</a>
+            <a href="{{ url_for('course_dashboard') }}" style="background: #5cb85c; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">📚 View All Courses</a>
+            <a href="{{ url_for('home') }}" style="background: #f0ad4e; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">➕ Create New Course</a>
         </div>
     </div>
 </div>
