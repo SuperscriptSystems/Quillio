@@ -170,28 +170,29 @@ class CoursePromptBuilder:
                 profile_details.append(f"Bio: '{user_profile.bio}'")
             if profile_details:
                 user_context_string = f"- Personalize the course for the following user profile: {'; '.join(profile_details)}.\n"
-        
         # Add instructions if provided
         instructions_string = ""
         if instructions:
             instructions_string = f"- Follow these specific instructions for course creation: {instructions}\n"
         return f"""
-            You have been provided with the following content from an uploaded document:
+        You have been provided with the following content from an uploaded document. This is the ONLY source of information you should use to create the course structure:
 
-            --- DOCUMENT CONTENT START ---
-            {content[:4000]}...
-            --- DOCUMENT CONTENT END ---
+        --- DOCUMENT CONTENT START ---
+        {content[:4000]}...
+        --- DOCUMENT CONTENT END ---
 
-            Your task:
-            - Analyze this content and create a comprehensive course structure based on it.
-            - Break down the material into logical units and lessons.
-            - Each unit should contain multiple lessons with estimated completion times.
-            - Include a test for each unit to assess understanding.
+        Your task:
+        - Analyze ONLY the content provided above and create a comprehensive course structure based on it.
+        - Use the supplied document only, do not invent new information or include any external knowledge.
+        - Break down the material into logical units and lessons based strictly on the document content.
+        - Each unit should contain multiple lessons with estimated completion times.
+        - Include a test for each unit to assess understanding of the document content.
             {user_context_string}
             {instructions_string}
             - Your entire response MUST be a valid JSON object.
             - Generate the user-visible string values in the JSON (like course_title, unit_title, lesson_title, test_title) in the following language: {language}.
             - Keep all JSON keys (like "course_title", "units", "lessons", "estimated_time_minutes", "test", "test_title") in English.
+{{ ... }}
 
             Return the course structure using the format:
 
