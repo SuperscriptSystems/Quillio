@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, session, redirect, url_for, flash, jsonify, request
 from flask_login import login_required, current_user
 from app.forms import InitialAssessmentForm, AnswerForm
 from app.helpers import save_test_to_dict, load_test_from_dict, render_answer_input
@@ -9,7 +9,7 @@ from app.services import (
     calculate_percentage_score_service,
     create_course_service,
 )
-from app.models import UnitTestResult
+from app.models import UnitTestResult, Course, Lesson
 from app.configuration import db
 import time
 
@@ -166,7 +166,7 @@ def get_unit_test_data(course_id, unit_title, test_title):
     session['current_unit_test_answers'] = []
     session['current_course_id'] = course_id
     session['current_unit_title'] = unit_title
-    session.modified = True
+    
     return jsonify({'redirect_url': url_for('assessment.unit_test')})
 
 
@@ -174,38 +174,87 @@ def get_unit_test_data(course_id, unit_title, test_title):
 @login_required
 def unit_test():
     try:
+        # Check if test exists in session
         if 'current_unit_test' not in session:
+            flash('No test found. Please try again.', 'error')
             return redirect(url_for('course.course_dashboard'))
+            
+        # Load test data
         test = load_test_from_dict(session['current_unit_test'])
+        
+        # Initialize session variables if they don't exist
         if 'current_unit_test_index' not in session:
             session['current_unit_test_index'] = 0
         if 'current_unit_test_answers' not in session:
             session['current_unit_test_answers'] = []
-        test_index = session['current_unit_test_index']
+            
+        current_index = session['current_unit_test_index']
+        
+        # Check if we've completed all questions
+        if current_index >= len(test.questions):
+            return redirect(url_for('assessment.get_unit_results_data'))
+        
+        # Handle form submission
         if request.method == 'POST':
-            current_question = test.questions[test_index]
             form = AnswerForm()
-            if hasattr(current_question, 'choices'):
-                form.answer.choices = [(str(i), str(choice)) for i, choice in enumerate(current_question.choices)]
-            if 'answer' in request.form:
-                form.answer.data = request.form['answer']
-                if form.answer.data is not None:
-                    session['current_unit_test_answers'].append({
-                        "question": current_question.question,
-                        "answer": form.answer.data,
-                        "choices": getattr(current_question, 'choices', None)
-                    })
-                    session['current_unit_test_index'] += 1
-                    session.modified = True
-                    if session['current_unit_test_index'] >= len(test.questions):
-                        return redirect(url_for('assessment.loading', context='unit_results'))
-                    return redirect(url_for('assessment.unit_test'))
-            flash('Please select an answer before continuing.', 'error')
-            return render_question(test, test_index, current_user.language)
-        if test_index >= len(test.questions):
-            return redirect(url_for('assessment.loading', context='unit_results'))
-        return render_question(test, test_index, current_user.language)
-    except Exception:
+            
+            # Get current question
+            current_question = test.questions[current_index]
+            
+            # Set up form choices if options are available
+            if hasattr(current_question, 'options') and current_question.options:
+                form.answer.choices = [(key, value) for key, value in current_question.options.items()]
+            
+            if form.validate_on_submit() or 'answer' in request.form:
+                # Get the answer from form or direct request
+                answer_data = {
+                    'question': current_question.question,
+                    'answer_value': request.form.get('answer', ''),
+                    'answer': '',  # Will be set based on choices if available
+                    'correct_answer': getattr(current_question, 'correct_answer', '')
+                }
+                
+                # If this is a multiple choice question, get the actual answer text
+                if hasattr(current_question, 'options') and current_question.options:
+                    try:
+                        choice_index = int(answer_data['answer_value'])
+                        answer_data['answer'] = current_question.options.get(str(choice_index), answer_data['answer_value'])
+                    except (ValueError, KeyError):
+                        answer_data['answer'] = answer_data['answer_value']
+                else:
+                    answer_data['answer'] = answer_data['answer_value']
+                
+                # Save the answer
+                session['current_unit_test_answers'].append(answer_data)
+                session.modified = True
+                
+                # Move to next question or finish test
+                session['current_unit_test_index'] += 1
+                
+                if session['current_unit_test_index'] >= len(test.questions):
+                    return redirect(url_for('assessment.get_unit_results_data'))
+                    
+                return redirect(url_for('assessment.unit_test'))
+            else:
+                flash('Please select an answer before continuing.', 'error')
+        
+        # Handle GET request - show current question
+        current_question = test.questions[current_index]
+        form = AnswerForm()
+        
+        # Set up form choices if options are available
+        if hasattr(current_question, 'options') and current_question.options:
+            form.answer.choices = [(key, value) for key, value in current_question.options.items()]
+        
+        return render_template('unit_test.html',
+                            form=form,
+                            question=current_question,
+                            current=current_index + 1,
+                            total=len(test.questions),
+                            lang=current_user.language)
+                            
+    except Exception as e:
+        print(f"Error in unit_test: {str(e)}")
         flash('An error occurred while loading the test. Please try again.', 'error')
         return redirect(url_for('course.course_dashboard'))
 
@@ -213,44 +262,219 @@ def unit_test():
 def render_question(test, test_index, lang):
     current_question = test.questions[test_index]
     form = AnswerForm()
+    
+    # Handle different question types and attributes
     if hasattr(current_question, 'choices'):
         form.answer.choices = [(str(i), str(choice)) for i, choice in enumerate(current_question.choices)]
-    input_html = render_answer_input(current_question)
-    return render_template('question_page.html', test_page=current_question, input_html=input_html, current=test_index + 1, total=len(test.questions), form=form, lang=lang)
+    elif hasattr(current_question, 'options'):
+        # Handle questions with 'options' attribute
+        form.answer.choices = [(str(i), str(option)) for i, option in enumerate(current_question.options.values())]
+    
+    try:
+        input_html = render_answer_input(current_question)
+    except Exception as e:
+        print(f"Error in render_answer_input: {str(e)}")
+        # Fallback to a simple input if rendering fails
+        input_html = '<input type="text" name="answer" required>'
+    
+    return render_template('question_page.html', 
+                         test_page=current_question, 
+                         input_html=input_html, 
+                         current=test_index + 1, 
+                         total=len(test.questions), 
+                         form=form, 
+                         lang=lang)
 
 
 @assessment_bp.route('/get_unit_results_data')
 @login_required
 def get_unit_results_data():
-    if 'current_unit_test' not in session:
-        return jsonify({"error": "No unit test in progress."}), 400
-    test_info = load_test_from_dict(session['current_unit_test'])
-    user_answers = session['current_unit_test_answers']
-    course_id = session.get('current_course_id')
-    unit_title = session.get('current_unit_title')
-    detailed_results = evaluate_answers_service(test_info.questions, user_answers, current_user.language)
-    time.sleep(1)
-    final_score = calculate_percentage_score_service(detailed_results)
-    if course_id and unit_title:
-        existing_result = UnitTestResult.query.filter_by(user_id=current_user.id, course_id=course_id, unit_title=unit_title).first()
-        if existing_result:
-            existing_result.score = final_score
-        else:
-            new_result = UnitTestResult(user_id=current_user.id, course_id=course_id, unit_title=unit_title, score=final_score)
-            db.session.add(new_result)
-        db.session.commit()
-    session['unit_test_final_results'] = {'answers': detailed_results, 'final_score': final_score, 'test_name': test_info.test_name, 'course_id': course_id}
-    for key in ['current_unit_test', 'current_unit_test_index', 'current_unit_test_answers', 'current_course_id', 'current_unit_title']:
-        session.pop(key, None)
-    return jsonify({'redirect_url': url_for('assessment.show_unit_test_results')})
+    try:
+        if 'current_unit_test' not in session:
+            flash('No test in progress. Please start a new test.', 'error')
+            return redirect(url_for('course.course_dashboard'))
+            
+        # Load test data
+        test_info = load_test_from_dict(session['current_unit_test'])
+        user_answers = session.get('current_unit_test_answers', [])
+        course_id = session.get('current_course_id')
+        unit_title = session.get('current_unit_title')
+        
+        # Ensure we have answers to evaluate
+        if not user_answers:
+            flash('No answers found for this test. Please try again.', 'error')
+            return redirect(url_for('course.course_dashboard'))
+        
+        # Evaluate answers
+        detailed_results = evaluate_answers_service(test_info.questions, user_answers, current_user.language)
+        
+        # Process and validate results
+        processed_answers = []
+        correct_answers = 0
+        
+        for i, answer in enumerate(detailed_results, 1):
+            # Ensure all required fields exist
+            processed = {
+                'question': answer.get('question', f'Question {i}'),
+                'answer': answer.get('answer', ''),
+                'answer_value': str(answer.get('answer_value', '')),
+                'correct_answer': str(answer.get('correct_answer', '')),
+                'assessment': answer.get('assessment', '')
+            }
+            
+            # Determine if answer is correct by checking the assessment text
+            assessment = str(answer.get('assessment', '')).lower()
+            
+            # Check for clear indicators of correct/incorrect in the assessment text
+            is_correct = False
+            
+            # Check for positive indicators
+            if any(word in assessment for word in ['correct', 'right', 'верно', 'правильно', 'accurate', 'true', 'yes']):
+                is_correct = True
+            
+            # Override if there are negative indicators
+            if any(word in assessment for word in ['incorrect', 'wrong', 'неверно', 'неправильно', 'inaccurate', 'false', 'no']):
+                is_correct = False
+                
+            # Special case: if assessment starts with 'correct' or 'incorrect', use that
+            if assessment.startswith('correct'):
+                is_correct = True
+            elif assessment.startswith('incorrect'):
+                is_correct = False
+                
+            processed['is_correct'] = is_correct
+            
+            # Count correct answers
+            if is_correct:
+                correct_answers += 1
+                
+            processed_answers.append(processed)
+        
+        # Calculate statistics
+        total_questions = len(processed_answers)
+        final_score = int((correct_answers / total_questions) * 100) if total_questions > 0 else 0
+        
+        # Save to database if we have course and unit info
+        if course_id and unit_title:
+            try:
+                existing_result = UnitTestResult.query.filter_by(
+                    user_id=current_user.id, 
+                    course_id=course_id, 
+                    unit_title=unit_title
+                ).first()
+                
+                if existing_result:
+                    existing_result.score = final_score
+                    existing_result.completed_at = datetime.utcnow()
+                else:
+                    new_result = UnitTestResult(
+                        user_id=current_user.id,
+                        course_id=course_id,
+                        unit_title=unit_title,
+                        score=final_score,
+                        completed_at=datetime.utcnow()
+                    )
+                    db.session.add(new_result)
+                db.session.commit()
+            except Exception as e:
+                print(f"Error saving test result to database: {str(e)}")
+                db.session.rollback()
+        
+        # Prepare final results data
+        results_data = {
+            'answers': processed_answers,
+            'final_score': final_score,
+            'test_name': getattr(test_info, 'test_name', 'Unit Test'),
+            'course_id': course_id,
+            'unit_title': unit_title,
+            'total_questions': total_questions,
+            'correct_answers': correct_answers
+        }
+        
+        # Store in session
+        session['unit_test_final_results'] = results_data
+        
+        # Clean up session
+        cleanup_keys = [
+            'current_unit_test',
+            'current_unit_test_index',
+            'current_unit_test_answers',
+            'current_course_id',
+            'current_unit_title'
+        ]
+        for key in cleanup_keys:
+            session.pop(key, None)
+            
+        # Redirect to show results page directly (no JSON response needed)
+        return redirect(url_for('assessment.show_unit_test_results'))
+        
+    except Exception as e:
+        print(f"Error in get_unit_results_data: {str(e)}")
+        flash('An error occurred while processing your test results. Please try again.', 'error')
+        return redirect(url_for('course.course_dashboard'))
 
 
 @assessment_bp.route('/unit_test_results')
 @login_required
 def show_unit_test_results():
-    if 'unit_test_final_results' not in session:
-        return redirect(url_for('course.course_dashboard'))
-    results = session.pop('unit_test_final_results', None)
+    # Get results from session
+    results = session.get('unit_test_final_results')
+    
+    # If no results in session, show error
     if not results:
+        flash('No test results found. Please try taking the test again.', 'error')
         return redirect(url_for('course.course_dashboard'))
-    return render_template('unit_test_results.html', answers=results['answers'], final_score=results['final_score'], test_name=results['test_name'], course_id=results['course_id'])
+    
+    # Ensure we have answers to display
+    answers = results.get('answers', [])
+    if not answers:
+        flash('No answers found in test results. Please try again.', 'error')
+        return redirect(url_for('course.course_dashboard'))
+    
+    # Process each answer to ensure all required fields are present
+    processed_answers = []
+    for i, answer in enumerate(answers, 1):
+        # Ensure all required fields exist with defaults
+        processed = {
+            'question': answer.get('question', f'Question {i}'),
+            'answer': str(answer.get('answer', '')),
+            'answer_value': str(answer.get('answer_value', '')),
+            'correct_answer': str(answer.get('correct_answer', '')),
+            'assessment': str(answer.get('assessment', '')),
+            'is_correct': bool(answer.get('is_correct', False))
+        }
+        
+        # If is_correct wasn't set, try to determine it from assessment text
+        if not processed['is_correct'] and processed['assessment']:
+            assessment = processed['assessment'].lower()
+            processed['is_correct'] = any(word in assessment 
+                                       for word in ['correct', 'right', 'верно', 'правильно'])
+        
+        processed_answers.append(processed)
+    
+    # Calculate statistics
+    total_questions = len(processed_answers)
+    correct_answers = sum(1 for a in processed_answers if a['is_correct'])
+    
+    # Use provided score or calculate it
+    final_score = results.get('final_score')
+    if final_score is None:
+        final_score = int((correct_answers / total_questions) * 100) if total_questions > 0 else 0
+    
+    # Prepare template context
+    context = {
+        'answers': processed_answers,
+        'final_score': final_score,  # Changed from 'score' to 'final_score' to match template
+        'total_questions': total_questions,
+        'correct_answers': correct_answers,
+        'test_name': results.get('test_name', 'Unit Test'),
+        'unit_title': results.get('unit_title', ''),
+        'course_id': results.get('course_id'),
+        'lang': current_user.language
+    }
+    
+    # Clear the results from session to prevent showing them again on refresh
+    if 'unit_test_final_results' in session:
+        session.pop('unit_test_final_results')
+    
+    return render_template('unit_test_results.html', **context)
