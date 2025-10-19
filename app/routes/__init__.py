@@ -8,6 +8,7 @@ from .assessment_routes import assessment_bp
 from .lesson_routes import lesson_bp
 from .ai_routes import ai_bp
 from .file_routes import file_bp
+from .health_routes import health_bp
 
 # Export a list of blueprints to register in the main app
 blueprints = [
@@ -18,4 +19,5 @@ blueprints = [
     lesson_bp,
     ai_bp,
     file_bp,
+    health_bp,
 ]
