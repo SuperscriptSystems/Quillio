@@ -16,6 +16,11 @@ def send_verification_email(user):
         if not verification_code:
             logging.error(f"No verification code found for user {user.email}")
             return False
+            
+        # Print verification code to console for development
+        print(f"\n=== DEVELOPMENT MODE ===")
+        print(f"Verification code for {user.email}: {verification_code}")
+        print("======================\n")
         
         # Get SMTP configuration from environment variables
         smtp_server = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
