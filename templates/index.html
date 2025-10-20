@@ -1,211 +1,325 @@
 {% extends "base.html" %}
 
-{% block title %}{% if current_user.language == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}{% endblock %}
+{% block title %}
+  {% if current_user.language == 'russian' %}
+    Создать новый курс
+  {% else %}
+    Create a New Course
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 {% set lang = current_user.language %}
-      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+
 <style>
-  .container { background: #344955; border-radius: 12px; padding: 30px; max-width: 600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: fadeIn 1s ease-in-out; }
-  h1, h2 { text-align: center; font-weight: 700; color: #F0F0F0; }
-  h1 { font-size: 2.5rem; }
-  h2 { font-weight: 400; color: #E0E0E0; margin-bottom: 30px;}
-  label { display: block; margin-bottom: 8px; font-weight: bold; }
-  textarea { width: 100%; height: 90px; padding: 12px; font-size: 15px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
-  textarea:focus { outline: none; border-color: #5cb85c; }
-  .radio-group { margin-top: 20px; margin-bottom: 20px;}
-  .radio-group label { display: inline-block; font-weight: normal; margin-right: 15px; }
-  input[type="radio"] { transform: scale(1.1); accent-color: #5cb85c; margin-right: 10px; }
-  .slider-container { margin: 20px 0; }
-  input[type="range"] { width: 100%; accent-color: #5cb85c; }
-  .slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: #cccccc; }
-  .current-value { text-align: center; font-size: 14px; margin-top: 5px; color: #E0E0E0; font-weight: bold; }
-  button { width: 100%; padding: 14px; background: #5cb85c; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
-  button:hover { background: #4a9a4a; }
-  #loading { display: none; text-align: center; padding: 30px; font-size: 22px; color: #F0F0F0; }
-  #spinner { margin: 25px auto; width: 50px; height: 50px; border: 6px solid rgba(255, 255, 255, 0.2); border-top: 6px solid #5cb85c; border-radius: 50%; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  body {
+    background-color: #22303C;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .container {
+    background: #344955;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 680px;
+    margin: 40px auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    animation: fadeIn 0.8s ease-in-out;
+  }
+
+  h1 {
+    text-align: center;
+    color: #F0F0F0;
+    font-weight: 800;
+    font-size: 2.2rem;
+    margin-bottom: 20px;
+  }
+
+  .tabs {
+    display: flex;
+    justify-content: center;
+    background: #2A3F4A;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 25px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 14px 0;
+    text-align: center;
+    color: #E0E0E0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .tab.active {
+    background: #5cb85c;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(92, 184, 92, 0.6);
+  }
+
+  .tab:hover {
+    background: #4a9a4a;
+    color: #fff;
+  }
+
+  .tab-content {
+    display: none;
+    animation: fadeSlide 0.4s ease;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #F0F0F0;
+  }
+
+  textarea, input[type="file"], input[type="range"] {
+    width: 100%;
+    background: #2A3F4A;
+    color: #F0F0F0;
+    border: 1px solid #4a5e6a;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+
+  textarea:focus, input[type="file"]:focus, input[type="range"]:focus {
+    outline: none;
+    border-color: #5cb85c;
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    background: #5cb85c;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  button:hover {
+    background: #4a9a4a;
+  }
+
+  .secondary-btn {
+    background: #17a2b8;
+  }
+
+  .secondary-btn:hover {
+    background: #138d9e;
+  }
+
+  .slider-container {
+    margin-top: 20px;
+  }
+
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    color: #ccc;
+    font-size: 13px;
+  }
+
+  .current-value {
+    text-align: center;
+    color: #E0E0E0;
+    margin-top: 5px;
+  }
+
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 40px;
+    color: #F0F0F0;
+  }
+
+  #spinner {
+    margin: 25px auto;
+    width: 55px;
+    height: 55px;
+    border: 6px solid rgba(255, 255, 255, 0.2);
+    border-top: 6px solid #5cb85c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes fadeIn { from {opacity: 0; transform: translateY(15px);} to {opacity: 1; transform: translateY(0);} }
+  @keyframes fadeSlide { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+  @keyframes spin { to {transform: rotate(360deg);} }
+
+  a#toggle-advanced, a#toggle-advanced-upload {
+    color: #5cb85c;
+    text-decoration: none;
+    font-size: 0.9em;
+  }
 </style>
 
-<div id="main-content">
-    <div class="container">
-      <h1>{% if lang == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}</h1>
+<div class="container">
+  <h1>{% if lang == 'russian' %}Создать новый курс{% else %}Create a New Course{% endif %}</h1>
 
-      <!-- Assessment Form -->
-      <form method="POST" action="{{ url_for('assessment.assessment') }}" id="assessment-form">
-        <label for="topic">{% if lang == 'russian' %}О чем бы вы хотели узнать?{% else %}What would you like to learn about?{% endif %}</label>
-        <textarea id="topic" name="topic" placeholder="{% if lang == 'russian' %}Например, декораторы Python, история Второй мировой войны...{% else %}E.g. Python decorators, World War II history...{% endif %}" required></textarea>
+  <div class="tabs">
+    <div class="tab active" id="open-course-tab">{% if lang == 'russian' %}Открытый курс{% else %}Open Course{% endif %}</div>
+    <div class="tab" id="private-course-tab">{% if lang == 'russian' %}Частный курс{% else %}Private Course{% endif %}</div>
+  </div>
 
-        <div class="slider-container">
-          <label for="knowledge">{% if lang == 'russian' %}Насколько хорошо вы уже знаете эту тему? (0-100){% else %}How well do you know this topic already? (0-100){% endif %}</label>
-          <input id="knowledge" name="knowledge" type="range" min="0" max="100" value="50">
-          <div class="slider-labels">
-            <span>{% if lang == 'russian' %}Новичок{% else %}Beginner{% endif %}</span>
-            <span>{% if lang == 'russian' %}Средний{% else %}Intermediate{% endif %}</span>
-            <span>{% if lang == 'russian' %}Эксперт{% else %}Expert{% endif %}</span>
-          </div>
-          <div class="current-value" id="slider-value">{% if lang == 'russian' %}Текущее: 50{% else %}Current: 50{% endif %}</div>
-          <h3>{% if lang == 'russian' %}Давайте выясним, что вы знаете по этой теме{% else %}Let's find out what you know on this topic{% endif %}</h3>
-        </div>
-        
-        <!-- Advanced Settings Toggle -->
-        <div class="advanced-toggle" style="margin: 20px 0; text-align: right;">
-          <a href="#" id="toggle-advanced" style="color: #5cb85c; text-decoration: none; font-size: 0.9em;">
-            {% if lang == 'russian' %}⚙️ Дополнительные настройки{% else %}⚙️ Advanced Settings{% endif %}
-          </a>
-        </div>
-        
-        <!-- Advanced Settings Section -->
-        <div id="advanced-settings" style="display: none; margin: 20px 0; padding: 15px; background: #2A3F4A; border-radius: 8px; border: 1px solid #4a5e6a;">
-          <div style="margin-bottom: 15px;">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <input type="checkbox" id="include_background" name="include_background" value="1" 
-                     style="margin-right: 10px; width: auto;">
-              <label for="include_background" style="color: #F0F0F0; cursor: pointer; margin: 0;">
-                {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
-              </label>
-            </div>
-            <div style="font-size: 0.85em; color: #a0aec0; margin-left: 24px;">
-              {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные из вашего профиля{% else %}Will use: age, bio, and other details from your profile{% endif %}
-            </div>
-          </div>
-        </div>
-        
-        <button type="submit">{% if lang == 'russian' %}Начать оценку{% else %}Start Assessment{% endif %}</button>
-      </form>
+  <!-- OPEN COURSE TAB -->
+  <div class="tab-content active" id="open-course-content">
+    <form method="POST" action="{{ url_for('assessment.assessment') }}" id="assessment-form">
+      <label for="topic">{% if lang == 'russian' %}О чем бы вы хотели узнать?{% else %}What would you like to learn about?{% endif %}</label>
+      <textarea id="topic" name="topic" placeholder="{% if lang == 'russian' %}Например, декораторы Python...{% else %}E.g. Python decorators, World War II history...{% endif %}" required></textarea>
 
-      <!-- Divider -->
-      <div style="text-align: center; margin: 30px 0; color: #E0E0E0;">
-        <hr style="border: 1px solid #4a5e6a; margin: 20px 0;">
-        <span style="background: #344955; padding: 0 15px; font-weight: bold;">
-          {% if lang == 'russian' %}ИЛИ{% else %}OR{% endif %}
-        </span>
+      <div class="slider-container">
+        <label for="knowledge">{% if lang == 'russian' %}Уровень знаний (0–100){% else %}How well do you know this topic? (0–100){% endif %}</label>
+        <input id="knowledge" name="knowledge" type="range" min="0" max="100" value="50">
+        <div class="slider-labels">
+          <span>{% if lang == 'russian' %}Новичок{% else %}Beginner{% endif %}</span>
+          <span>{% if lang == 'russian' %}Средний{% else %}Intermediate{% endif %}</span>
+          <span>{% if lang == 'russian' %}Эксперт{% else %}Expert{% endif %}</span>
+        </div>
+        <div class="current-value" id="slider-value">{% if lang == 'russian' %}Текущее: 50{% else %}Current: 50{% endif %}</div>
       </div>
 
-      <!-- File Upload Section -->
-        <h2>{% if lang == 'russian' %}Загрузить документ{% else %}Upload Document{% endif %}</h2>
-        <p style="color: #E0E0E0; text-align: center; margin-bottom: 20px;">
-          {% if lang == 'russian' %}Загрузите PDF-файл для создания курса на основе его содержания{% else %}Upload a PDF file to create a course based on its content{% endif %}
+      <div class="advanced-toggle" style="text-align:right; margin-top:15px;">
+        <a href="#" id="toggle-advanced">⚙️ {% if lang == 'russian' %}Дополнительные настройки{% else %}Advanced Settings{% endif %}</a>
+      </div>
+
+      <div id="advanced-settings" style="display:none; margin-top:15px; background:#2A3F4A; padding:15px; border-radius:8px;">
+        <label style="display:flex; align-items:center;">
+          <input type="checkbox" id="include_background" name="include_background" value="1" style="margin-right:10px;">
+          {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
+        </label>
+        <p style="font-size:0.85em; color:#a0aec0; margin-left:25px;">
+          {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные{% else %}Uses your profile age, bio, and other details{% endif %}
         </p>
-
-        <form method="POST" action="{{ url_for('file.upload_course') }}" enctype="multipart/form-data" id="upload-form">
-          <div style="margin-bottom: 20px;">
-            <label for="file" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
-              {% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}<span style="color: #ff6b6b;">*</span>
-            </label>
-            <input type="file" id="file" name="file" accept=".pdf" required
-                   style="width: 100%; padding: 12px; border: 2px dashed #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; cursor: pointer;">
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <label for="instructions" style="display: block; margin-bottom: 10px; color: #F0F0F0;">
-              {% if lang == 'russian' %}Инструкции к курсу (необязательно):{% else %}Course Instructions (optional):{% endif %}
-            </label>
-            <textarea id="instructions" name="instructions" rows="4" 
-                      style="width: 100%; padding: 12px; border: 1px solid #4a5e6a; border-radius: 8px; background: #2A3F4A; color: #F0F0F0; font-family: 'Roboto', sans-serif; box-sizing: border-box; resize: vertical;"
-                      placeholder="{% if lang == 'russian' %}Например: Сделайте акцент на практических примерах, включите тесты после каждого раздела{% else %}E.g., Focus on practical examples, include tests after each section{% endif %}"></textarea>
-          </div>
-
-          <!-- Advanced Settings Toggle -->
-          <div class="advanced-toggle" style="margin: 20px 0; text-align: right;">
-            <a href="#" id="toggle-advanced-upload" style="color: #5cb85c; text-decoration: none; font-size: 0.9em;">
-              {% if lang == 'russian' %}⚙️ Дополнительные настройки{% else %}⚙️ Advanced Settings{% endif %}
-            </a>
-          </div>
-          
-          <!-- Advanced Settings Section -->
-          <div id="advanced-settings-upload" style="display: none; margin: 20px 0; padding: 15px; background: #2A3F4A; border-radius: 8px; border: 1px solid #4a5e6a;">
-            <div style="margin-bottom: 15px;">
-              <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <input type="checkbox" id="include_background_upload" name="include_background" value="1" 
-                       style="margin-right: 10px; width: auto;">
-                <label for="include_background_upload" style="color: #F0F0F0; cursor: pointer; margin: 0;">
-                  {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
-                </label>
-              </div>
-              <div style="font-size: 0.85em; color: #a0aec0; margin-left: 24px;">
-                {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные из вашего профиля{% else %}Will use: age, bio, and other details from your profile{% endif %}
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" style="background: #17a2b8; margin-top: 10px; width: 100%;">
-            {% if lang == 'russian' %}Создать курс из файла{% else %}Create Course from File{% endif %}
-          </button>
-        </form>
       </div>
-    </div>
+
+      <button type="submit" style="margin-top:15px;">
+        {% if lang == 'russian' %}Начать оценку{% else %}Start Assessment{% endif %}
+      </button>
+    </form>
   </div>
 
-  <div id="loading">
-    <p id="loading-text">{% if lang == 'russian' %}🧪 Готовим вашу персональную оценку...{% else %}🧪 Preparing your custom assessment...{% endif %}</p>
-    <div id="spinner"></div>
+  <!-- PRIVATE COURSE TAB -->
+  <div class="tab-content" id="private-course-content">
+    <form method="POST" action="{{ url_for('file.upload_course') }}" enctype="multipart/form-data" id="upload-form">
+      <label for="file">{% if lang == 'russian' %}Выберите PDF файл:{% else %}Choose PDF file:{% endif %}</label>
+      <input type="file" id="file" name="file" accept=".pdf" required>
+
+      <label for="instructions" style="margin-top:20px;">{% if lang == 'russian' %}Инструкции к курсу (необязательно):{% else %}Course Instructions (optional):{% endif %}</label>
+      <textarea id="instructions" name="instructions" rows="4"
+        placeholder="{% if lang == 'russian' %}Например: сделайте акцент на практических примерах{% else %}E.g., Focus on practical examples, add tests after sections{% endif %}"></textarea>
+
+      <div class="advanced-toggle" style="text-align:right; margin-top:15px;">
+        <a href="#" id="toggle-advanced-upload">⚙️ {% if lang == 'russian' %}Дополнительные настройки{% else %}Advanced Settings{% endif %}</a>
+      </div>
+
+      <div id="advanced-settings-upload" style="display:none; margin-top:15px; background:#2A3F4A; padding:15px; border-radius:8px;">
+        <label style="display:flex; align-items:center;">
+          <input type="checkbox" id="include_background_upload" name="include_background" value="1" style="margin-right:10px;">
+          {% if lang == 'russian' %}Использовать мои личные данные{% else %}Use my personal background{% endif %}
+        </label>
+        <p style="font-size:0.85em; color:#a0aec0; margin-left:25px;">
+          {% if lang == 'russian' %}Будут использованы: возраст, биография и другие данные{% else %}Uses your profile age, bio, and other details{% endif %}
+        </p>
+      </div>
+
+      <button type="submit" class="secondary-btn" style="margin-top:15px;">
+        {% if lang == 'russian' %}Создать курс из файла{% else %}Create Course from File{% endif %}
+      </button>
+    </form>
   </div>
+</div>
 
-  <script>
-    const assessmentForm = document.getElementById('assessment-form');
-    const uploadForm = document.getElementById('upload-form');
-    const loading = document.getElementById('loading');
-    const loadingText = document.getElementById('loading-text');
-    const mainContent = document.getElementById('main-content');
-    const slider = document.getElementById("knowledge");
-    const valueDisplay = document.getElementById("slider-value");
-    const lang = '{{ lang }}';
+<div id="loading">
+  <p id="loading-text">{% if lang == 'russian' %}🧪 Подготовка...{% else %}🧪 Preparing...{% endif %}</p>
+  <div id="spinner"></div>
+</div>
 
-    // Loading messages for different processes
-    const loadingMessages = {
-        assessment: {
-            russian: '🧪 Готовим вашу персональную оценку...',
-            english: '🧪 Preparing your custom assessment...'
-        },
-        upload: {
-            russian: '📄 Обрабатываем ваш PDF и создаем курс...',
-            english: '📄 Processing your PDF and creating course...'
-        }
-    };
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const contents = document.querySelectorAll('.tab-content');
+  const slider = document.getElementById('knowledge');
+  const valueDisplay = document.getElementById('slider-value');
+  const lang = '{{ lang }}';
+  const loading = document.getElementById('loading');
+  const mainContent = document.querySelector('.container');
+  const loadingText = document.getElementById('loading-text');
 
-    // Assessment form loading
-    assessmentForm.addEventListener('submit', function () {
-        const message = lang === 'russian' ? loadingMessages.assessment.russian : loadingMessages.assessment.english;
-        loadingText.textContent = message;
-        mainContent.style.display = 'none';
-        loading.style.display = 'block';
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      contents[index].classList.add('active');
     });
+  });
 
-    // Upload form loading
-    uploadForm.addEventListener('submit', function () {
-        const message = lang === 'russian' ? loadingMessages.upload.russian : loadingMessages.upload.english;
-        loadingText.textContent = message;
-      mainContent.style.display = 'none';
-      loading.style.display = 'block';
-    });
+  if (slider && valueDisplay) {
     slider.addEventListener("input", function () {
-        const prefix = lang === 'russian' ? 'Текущее: ' : 'Current: ';
-        valueDisplay.textContent = prefix + slider.value;
+      const prefix = lang === 'russian' ? 'Текущее: ' : 'Current: ';
+      valueDisplay.textContent = prefix + slider.value;
     });
-    
-    // Toggle advanced settings for assessment form
-    const toggleAdvanced = document.getElementById('toggle-advanced');
-    const advancedSettings = document.getElementById('advanced-settings');
-    
-    if (toggleAdvanced && advancedSettings) {
-        toggleAdvanced.addEventListener('click', function(e) {
-            e.preventDefault();
-            advancedSettings.style.display = advancedSettings.style.display === 'none' ? 'block' : 'none';
-        });
+  }
+
+  const toggleAdvanced = document.getElementById('toggle-advanced');
+  const advancedSettings = document.getElementById('advanced-settings');
+  if (toggleAdvanced && advancedSettings) {
+    toggleAdvanced.addEventListener('click', e => {
+      e.preventDefault();
+      advancedSettings.style.display = advancedSettings.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const toggleAdvancedUpload = document.getElementById('toggle-advanced-upload');
+  const advancedSettingsUpload = document.getElementById('advanced-settings-upload');
+  if (toggleAdvancedUpload && advancedSettingsUpload) {
+    toggleAdvancedUpload.addEventListener('click', e => {
+      e.preventDefault();
+      advancedSettingsUpload.style.display = advancedSettingsUpload.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const assessmentForm = document.getElementById('assessment-form');
+  const uploadForm = document.getElementById('upload-form');
+  const loadingMessages = {
+    assessment: {
+      russian: '🧪 Готовим вашу персональную оценку...',
+      english: '🧪 Preparing your custom assessment...'
+    },
+    upload: {
+      russian: '📄 Обрабатываем ваш PDF и создаем курс...',
+      english: '📄 Processing your PDF and creating course...'
     }
-    
-    // Toggle advanced settings for upload form
-    const toggleAdvancedUpload = document.getElementById('toggle-advanced-upload');
-    const advancedSettingsUpload = document.getElementById('advanced-settings-upload');
-    
-    if (toggleAdvancedUpload && advancedSettingsUpload) {
-        toggleAdvancedUpload.addEventListener('click', function(e) {
-            e.preventDefault();
-            advancedSettingsUpload.style.display = advancedSettingsUpload.style.display === 'none' ? 'block' : 'none';
-        });
-    }
+  };
+
+  assessmentForm?.addEventListener('submit', () => {
+    loadingText.textContent = lang === 'russian' ? loadingMessages.assessment.russian : loadingMessages.assessment.english;
+    mainContent.style.display = 'none';
+    loading.style.display = 'block';
+  });
+
+  uploadForm?.addEventListener('submit', () => {
+    loadingText.textContent = lang === 'russian' ? loadingMessages.upload.russian : loadingMessages.upload.english;
+    mainContent.style.display = 'none';
+    loading.style.display = 'block';
+  });
 </script>
+
 {% endblock %}
