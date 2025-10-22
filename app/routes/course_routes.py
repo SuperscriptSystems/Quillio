@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request, current_app
 from flask_login import login_required, current_user
 from app.models import Course, Lesson, CourseShare
 from app.configuration import db
+from sqlalchemy.orm import joinedload
 import secrets
 from datetime import datetime, timedelta
 
@@ -127,7 +128,6 @@ def share_course():
             )
             db.session.add(share)
             db.session.commit()
-        share_link = url_for('course.public_course', course_id=course_id, token=share.token, _external=True)
         return jsonify({'success': True, 'share_link': share_link, 'course_title': course.course_title})
     except Exception as e:
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
@@ -135,32 +135,109 @@ def share_course():
 
 @course_bp.route('/course/public/<uuid:course_id>', methods=['GET'])
 def public_course(course_id):
+    # Get the token from query parameters
     token = request.args.get('token')
+    
+    # If no token provided, redirect to login
     if not token:
         flash('This is a private course. Please log in to view it.', 'info')
         return redirect(url_for('auth.login', next=request.url))
+    
+    # Find the active share record
     share = CourseShare.query.filter(
         CourseShare.course_id == str(course_id),
         CourseShare.token == token,
         CourseShare.expires_at > datetime.utcnow(),
         CourseShare.is_active == True
     ).first()
+    
+    # If no valid share found, show error
     if not share:
         flash('Invalid or expired share link', 'error')
         return redirect(url_for('auth.login'))
-    course = Course.query.get_or_404(course_id)
-    return render_template('public_course.html', course=course, share_link=request.url, is_owner=False)
-
-
-@course_bp.route('/course/<uuid:course_id>/archive', methods=['POST'])
-@login_required
-def archive_course(course_id):
-    course = Course.query.get_or_404(course_id)
-    if course.user_id == current_user.id:
-        course.status = 'archived'
-        db.session.commit()
-        flash(f"'{course.course_title}' has been archived.", "info")
-    return redirect(url_for('course.course_dashboard'))
+    
+    # Get the course with its lessons
+    course = Course.query.options(
+        joinedload(Course.lessons)
+    ).get_or_404(course_id)
+    
+    # Group lessons by unit_title
+    units = {}
+    for lesson in course.lessons:
+        if lesson.unit_title not in units:
+            units[lesson.unit_title] = []
+        units[lesson.unit_title].append({
+            'id': lesson.id,
+            'lesson_title': lesson.lesson_title,
+            'is_completed': lesson.is_completed,
+            'html_content': lesson.html_content
+        })
+    
+    # Convert to list of units with lessons for the template
+    units_list = [{'unit_title': title, 'lessons': lessons} 
+                 for title, lessons in units.items()]
+    
+    # Initialize course description
+    description = None
+    
+    # Check if description exists in course_data JSON
+    if hasattr(course, 'course_data') and isinstance(course.course_data, dict):
+        description = course.course_data.get('description')
+    
+    # If no description, try to generate one with AI
+    if not description or description == 'No description available.':
+        try:
+            # Get all lessons for the course
+            lesson_titles = [lesson.lesson_title for lesson in course.lessons]
+            
+            # Create prompt for AI
+            prompt = f"""Create a concise, engaging course description (2-3 sentences) for a course titled \"{course.course_title}\".
+            
+            Course Content:
+            {', '.join(lesson_titles) if lesson_titles else 'No lessons available.'}
+            
+            The description should be professional, highlight key learning outcomes, and encourage enrollment.
+            """
+            
+            # Call AI to generate description
+            from app.ai_clients import _call_gemini
+            
+            try:
+                ai_description, _ = _call_gemini(prompt)
+                if ai_description:
+                    description = ai_description.strip()
+                    # Store in course_data if it exists
+                    if hasattr(course, 'course_data') and isinstance(course.course_data, dict):
+                        if course.course_data is None:
+                            course.course_data = {}
+                        course.course_data['description'] = description
+                        db.session.commit()
+            except Exception as e:
+                current_app.logger.error(f"Error generating AI description: {str(e)}")
+                description = 'Course description not available.'
+        except Exception as e:
+            current_app.logger.error(f"Error in description generation: {str(e)}")
+            description = 'Course description not available.'
+    
+    # If we still don't have a description, set a default
+    if not description:
+        description = 'No description available.'
+    
+    # Calculate total lessons
+    total_lessons = len(course.lessons)
+    
+    # Add description to course data if it doesn't exist
+    if not hasattr(course, 'description'):
+        course.description = description
+    elif not course.description:
+        course.description = description
+    
+    # Render the public course template
+    return render_template('public_course.html', 
+                         course=course, 
+                         units=units_list,
+                         total_lessons=total_lessons,
+                         token=token)
 
 
 @course_bp.route('/course/<uuid:course_id>/certificate')

@@ -1,106 +1,325 @@
 {% extends "base.html" %}
 
-{% block title %}{{ course.course_title }} (Shared){% endblock %}
-
 {% block content %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const saveCourseBtn = document.getElementById('saveCourseBtn');
-    const saveStatus = document.getElementById('saveStatus');
-    
-    if (saveCourseBtn) {
-        saveCourseBtn.addEventListener('click', async function() {
-            const courseId = this.getAttribute('data-course-id');
-            const originalText = this.innerHTML;
-            
-            // Disable button and show processing state
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-            saveStatus.textContent = 'Saving course...';
-            saveStatus.style.display = 'block';
-            saveStatus.className = 'mt-2 text-info';
-            
-            try {
-                const response = await fetch(`/course/${courseId}/duplicate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.redirect_url) {
-                    saveStatus.textContent = 'Course saved successfully! Redirecting...';
-                    saveStatus.className = 'mt-2 text-success';
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 1000);
-                } else {
-                    throw new Error(data.error || 'Failed to save course');
-                }
-            } catch (error) {
-                console.error('Error saving course:', error);
-                saveStatus.textContent = 'Error: ' + (error.message || 'Failed to save course');
-                saveStatus.className = 'mt-2 text-danger';
-                this.disabled = false;
-                this.innerHTML = originalText;
-            }
-        });
-    }
-});
-</script>
-<div class="container">
-    <h1>{{ course.course_title }}</h1>
-    <p class="text-muted">Shared with you by {{ course.user.full_name or course.user.email }}</p>
-    
-    <div class="course-description">
-        {{ course.description|safe if course.description else 'No description available.' }}
-    </div>
-    
-    <div class="mt-4">
-        <h3>Course Content</h3>
-        <div class="list-group">
-            {% for unit in course.units %}
-                <div class="list-group-item">
-                    <h5>{{ unit.unit_title }}</h5>
-                    <ul class="list-unstyled">
-                        {% for lesson in unit.lessons %}
-                            <li class="ms-3">
-                                <i class="bi bi-file-text"></i> {{ lesson.lesson_title }}
-                                <small class="text-muted">({{ current_user.preferred_lesson_length }} min)</small>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
+<style>
+/* --- General Course Header --- */
+.course-header {
+    padding: 2rem 1rem;
+    border-radius: 12px;
+    background: #1e2a33; /* dark green/black */
+    margin-bottom: 2rem;
+    color: #b3e0ff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.course-title {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+.course-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #a0d4ff;
+}
+.author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #4a5e6a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* --- Description --- */
+.course-description {
+    background: #23303b;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    font-size: 1rem;
+    border-left: 4px solid #5cb85c; /* accent green */
+}
+
+/* --- Syllabus / Units --- */
+.syllabus-section {
+    margin-bottom: 2rem;
+}
+.syllabus-section h2 {
+    color: #b3e0ff;
+    margin-bottom: 1rem;
+}
+.accordion .card {
+    background: #1e2a33;
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+.card-header {
+    background: #23303b;
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    color: #b3e0ff;
+    transition: background 0.2s;
+}
+.card-header:hover {
+    background: #2a3f4c;
+}
+.card-header button {
+    color: #b3e0ff;
+    font-size: 1rem;
+    width: 100%;
+    text-align: left;
+}
+.card-body {
+    padding: 0.5rem 1rem 1rem;
+}
+.list-group-item {
+    background: #1e2a33;
+    border: none;
+    padding: 0.6rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #2a3f4c;
+    transition: background 0.2s, transform 0.15s;
+}
+.list-group-item:hover {
+    background: #23303b;
+    transform: translateX(2px);
+}
+.lesson-icon {
+    color: #5cb85c;
+    font-size: 1.2rem;
+}
+
+/* --- Unit / Lesson Cards --- */
+.unit-card {
+    background: #1e2a33;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    border-left: 4px solid #5cb85c;
+}
+.unit-header {
+    background: #23303b;
+    padding: 0.75rem 1.2rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    color: #b3e0ff;
+}
+.unit-header:hover {
+    background: #2a3f4c;
+}
+.lesson-list {
+    padding: 0.5rem 1rem 0.8rem;
+}
+.lesson-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    color: #d0ebff;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.lesson-item:hover {
+    background: #23303b;
+}
+
+/* --- Buttons & CTA --- */
+.btn-save-course {
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #5cb85c;
+    color: #1e2a33;
+    border: none;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.btn-save-course:hover {
+    background: #4aa84a;
+    color: #ffffff;
+}
+.auth-cta {
+    background: #23303b;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+}
+.auth-cta h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+    color: #b3e0ff;
+}
+.auth-cta p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #d0ebff;
+}
+.auth-cta .btn-lg {
+    border-radius: 6px;
+}
+.shared-note {
+    font-size: 0.85rem;
+    color: #a0d4ff;
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .course-title { font-size: 1.75rem; }
+    .course-description { font-size: 0.95rem; padding: 1rem; }
+    .unit-header { font-size: 0.95rem; }
+    .lesson-item { font-size: 0.9rem; }
+}
+</style>
+
+<div class="course-header">
+    <div class="container">
+        <h1 class="course-title">{{ course.course_title }}</h1>
+        <div class="course-author">
+            <span class="author-avatar">{{ (course.user.full_name or course.user.email)[0]|upper }}</span>
+            Shared by {{ course.user.full_name or course.user.email }}
         </div>
     </div>
-    
-    <div class="mt-4">
-        {% if current_user.is_authenticated %}
-            <button id="saveCourseBtn" class="btn btn-primary" data-course-id="{{ course.id }}">
-                <i class="bi bi-copy"></i> Save to My Courses
-            </button>
-            <div id="saveStatus" class="mt-2" style="display: none;"></div>
-        {% else %}
-            <div class="alert alert-info">
-                <p>Create a free account to save this course and start learning!</p>
-                <div class="mt-2">
-                    <a href="{{ url_for('auth.register', next=request.url) }}" class="btn btn-primary me-2">
-                        Sign Up Free
-                    </a>
-                    <a href="{{ url_for('auth.login', next=request.url) }}" class="btn btn-outline-secondary">
-                        Log In
-                    </a>
+</div>
+
+<div class="container">
+
+    {% if course.description %}
+    <div class="course-description">
+        {{ course.description|safe }}
+    </div>
+    {% endif %}
+
+    <!-- Syllabus Section -->
+    <div class="syllabus-section">
+        <h2>Course Syllabus</h2>
+        {% if units %}
+        <div class="accordion" id="syllabusAccordion">
+            {% for unit in units %}
+            <div class="unit-card">
+                <div class="unit-header" data-bs-toggle="collapse" data-bs-target="#unit{{ loop.index }}" aria-expanded="true">
+                    <span>{{ unit.unit_title }}</span>
+                    <span class="badge bg-success">{{ unit.lessons|length }} lessons</span>
+                </div>
+                <div id="unit{{ loop.index }}" class="collapse {% if loop.first %}show{% endif %}">
+                    <div class="lesson-list">
+                        {% for lesson in unit.lessons %}
+                        <div class="lesson-item">
+                            <i class="bi bi-play-circle lesson-icon"></i>
+                            <span>{{ lesson.lesson_title }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">No syllabus available.</div>
         {% endif %}
     </div>
-    
-    <div class="mt-4 text-muted small">
-        <p>This is a shared link. The course owner can revoke access at any time.</p>
+
+    <!-- Save / CTA -->
+    <div class="text-center py-4">
+        {% if current_user.is_authenticated %}
+        <button id="saveCourseBtn" class="btn-save-course" data-course-id="{{ course.id }}">
+            <i class="bi bi-bookmark-plus"></i> Save to My Courses
+        </button>
+        <div class="shared-note">
+            <i class="bi bi-info-circle"></i> This is a shared link. The course owner can revoke access at any time.
+        </div>
+        {% else %}
+        <div class="auth-cta">
+            <h3>Ready to start learning?</h3>
+            <p>Create a free account to save this course and track your progress</p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{{ url_for('auth.register', next=request.url) }}" class="btn btn-success btn-lg">Get Started</a>
+                <a href="{{ url_for('auth.login', next=request.url) }}" class="btn btn-outline-light btn-lg">Log In</a>
+            </div>
+            <div class="shared-note mt-2">
+                <i class="bi bi-info-circle"></i> This is a shared link. The course owner can revoke access at any time.
+            </div>
+        </div>
+        {% endif %}
     </div>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const saveCourseBtn = document.getElementById('saveCourseBtn');
+    if (!saveCourseBtn) return;
+
+    const saveStatus = document.createElement('div');
+    saveStatus.className = 'mt-3';
+    saveCourseBtn.parentNode.appendChild(saveStatus);
+
+    saveCourseBtn.addEventListener('click', async function() {
+        const courseId = this.getAttribute('data-course-id');
+        const originalText = this.innerHTML;
+
+        // Disable button & show spinner
+        this.disabled = true;
+        this.innerHTML = `
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Saving...
+        `;
+        saveStatus.textContent = 'Saving course to your library...';
+        saveStatus.className = 'mt-3 text-info';
+
+        try {
+            const response = await fetch(`/course/${courseId}/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+
+            if (data.success && data.redirect_url) {
+                saveStatus.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i>Course saved! Redirecting...';
+                saveStatus.className = 'mt-3 text-success';
+                this.innerHTML = `<i class="bi bi-check2"></i> Saved`;
+                setTimeout(() => window.location.href = data.redirect_url, 1200);
+            } else {
+                throw new Error(data.error || 'Failed to save course');
+            }
+        } catch (error) {
+            console.error(error);
+            saveStatus.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Error: ${error.message}`;
+            saveStatus.className = 'mt-3 text-danger';
+            this.disabled = false;
+            this.innerHTML = originalText;
+
+            setTimeout(() => { saveStatus.style.display = 'none'; }, 5000);
+        }
+    });
+});
+</script>
+
+
 </div>
 {% endblock %}
