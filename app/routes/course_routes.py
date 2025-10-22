@@ -5,6 +5,7 @@ from app.configuration import db
 from sqlalchemy.orm import joinedload
 import secrets
 from datetime import datetime, timedelta
+from sqlalchemy import and_
 
 course_bp = Blueprint('course', __name__)
 
@@ -43,6 +44,43 @@ def settings():
         flash('Your settings have been updated!', 'success')
         return redirect(url_for('course.settings'))
     return render_template('settings.html')
+
+
+@course_bp.route('/course/<uuid:course_id>/update_title', methods=['POST'])
+@login_required
+def update_course_title(course_id):
+    try:
+        data = request.get_json()
+        if not data or 'request' not in data:
+            return jsonify({'success': False, 'error': 'No request data provided'}), 400
+            
+        course = Course.query.filter_by(id=course_id, user_id=current_user.id).first_or_404()
+        
+        # Extract the new title from the request
+        # The request might be in format "Update the course title to: New Title"
+        new_title = data['request']
+        if new_title.startswith('Update the course title to: '):
+            new_title = new_title.replace('Update the course title to: ', '').strip()
+        
+        if not new_title:
+            return jsonify({'success': False, 'error': 'Title cannot be empty'}), 400
+            
+        # Update the course title
+        course.course_title = new_title
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'course': {
+                'id': str(course.id),
+                'course_title': course.course_title
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error updating course title: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @course_bp.route('/course/<uuid:course_id>')
@@ -247,14 +285,23 @@ def show_certificate(course_id):
     return redirect(url_for('course.public_certificate', course_id=course_id, token=current_user.get_auth_token()))
 
 
-@course_bp.route('/public/certificate/<uuid:course_id>')
-@course_bp.route('/public/certificate/<uuid:course_id>/<token>', methods=['GET'])
+@course_bp.route('/archive/<uuid:course_id>', methods=['POST'])
+@login_required
+def archive_course(course_id):
+    course = Course.query.filter_by(id=course_id, user_id=current_user.id).first_or_404()
+    course.status = 'archived'
+    db.session.commit()
+    flash('Course has been archived successfully!', 'success')
+    return redirect(url_for('course.course_dashboard'))
+
+
+@course_bp.route('/public_certificate/<uuid:course_id>')
+@course_bp.route('/public_certificate/<uuid:course_id>/<token>', methods=['GET'])
 def public_certificate(course_id, token=None):
     from app.models import User
     # Get the course first
     course = Course.query.get_or_404(course_id)
     
-    # Check if user is accessing via valid token
     user = None
     if token:
         user = User.verify_auth_token(token)

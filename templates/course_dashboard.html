@@ -59,104 +59,150 @@ async function improveTitle(courseId, currentTitle) {
         alert('An error occurred while improving the title');
     }
 }
+
+async function changeTitle(courseId) {
+    // Ensure we have the full course ID (in case it was truncated)
+    const fullCourseId = courseId.length === 8 ? 
+        Array.from(document.querySelectorAll('[id^="course-title-"]')).find(id => 
+            id.startsWith(`course-title-${courseId}`)
+        )?.id.replace('course-title-', '') : courseId;
+
+    if (!fullCourseId) {
+        console.error('Could not find course with ID:', courseId);
+        alert('Error: Could not find course');
+        return;
+    }
+
+    const titleElement = document.getElementById(`course-title-${fullCourseId}`);
+    const currentTitle = titleElement.textContent.trim();
+    const newTitle = prompt('Enter a new title for the course:', currentTitle);
+    
+    if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+        try {
+            const response = await fetch(`/course/${fullCourseId}/update_title`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({ 
+                    request: `Update the course title to: ${newTitle}`
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.course && result.course.course_title) {
+                titleElement.textContent = result.course.course_title;
+                // Optional: Show a success message
+                const successMsg = document.createElement('span');
+                successMsg.textContent = '✓';
+                successMsg.style.marginLeft = '8px';
+                successMsg.style.color = '#5cb85c';
+                titleElement.parentNode.insertBefore(successMsg, titleElement.nextSibling);
+                
+                // Remove the success message after 2 seconds
+                setTimeout(() => {
+                    if (successMsg.parentNode) {
+                        successMsg.parentNode.removeChild(successMsg);
+                    }
+                }, 2000);
+            } else {
+                throw new Error(result.error || 'Failed to update title');
+            }
+        } catch (error) {
+            console.error('Error updating title:', error);
+            alert(`Error updating title: ${error.message || 'Unknown error'}`);
+        }
+    }
+}
 </script>
 {% endblock %}
 
 {% block content %}
 {% set lang = current_user.language %}
-      <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
+
 <style>
-    .container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; margin-bottom: 20px;}
-    .header h1 { margin: 0; color: #F0F0F0; border: none; padding: 0;}
-    .new-course-btn { background: #5cb85c; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; margin: 20px auto 0; }
-    .new-course-btn:hover { background: #4a9a4a; }
-    .course-list { list-style-type: none; padding-left: 0; }
-    .course-item { background: #2A3F4A; margin-bottom: 15px; border-radius: 8px; overflow: hidden; }
-    .course-info { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-    .course-info a { text-decoration: none; color: #F0F0F0; font-weight: bold; font-size: 1.2em; }
-    .course-info a:hover { color: #5cb85c; }
-    .course-actions { display: flex; gap: 10px; margin-left: auto; }
-    .course-actions .certificate-btn { font-size: 1em; font-weight: normal; padding: 5px 10px; border-radius: 5px; line-height: 1; display: inline-flex; align-items: center; }
-    .archive-form button { 
-        background: transparent; 
-        border: 1px solid #d9534f; 
-        color: #d9534f; 
-        padding: 5px 10px; 
-        border-radius: 5px; 
-        cursor: pointer; 
-        line-height: 1;
-        transition: all 0.2s;
-    }
-    .archive-form button:hover { 
-        background: #d9534f; 
-        color: white; 
-    }
-    .progress-bar-container { background-color: #4a5e6a; height: 10px; }
-    .progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
-    .progress-bar.completed { background-color: #f0ad4e; }
-    .no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
-    .new-course-wrapper { text-align: center; }
-    .certificate-btn { 
-        background: transparent; 
-        border: 1px solid #f0ad4e;
-        color: #f0ad4e; 
-        padding: 5px 10px; 
-        border-radius: 5px; 
-        text-decoration: none; 
-        font-weight: normal;
-        transition: all 0.2s;
-    }
-    .certificate-btn:hover { 
-        background: #f0ad4e; 
-        color: #000; 
-        text-decoration: none; 
-    }
-    /* Ensure certificate and archive buttons match size exactly in course actions */
-    .course-actions .certificate-btn,
-    .course-actions .archive-form button {
-        height: 32px;
-        line-height: 20px;
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-size: 14px;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        font-weight: normal;
-        min-width: 100px;
-        justify-content: center;
-    }
-    .course-list {
-        list-style: none;
-        padding: 0;
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    .btn {
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .btn-outline-secondary {
-        border: 1px solid #6c757d;
-        color: #6c757d;
-        background: transparent;
-    }
-    
-    .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        color: white;
-    }
-    
-    .btn-sm {
-        font-size: 0.8rem;
-    }
+.container { max-width: 800px; margin: auto; background: #344955; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4a5e6a; padding-bottom: 10px; margin-bottom: 20px;}
+.header h1 { margin: 0; color: #F0F0F0; border: none; padding: 0;}
+.new-course-btn { background: #5cb85c; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; margin: 20px auto 0; }
+.new-course-btn:hover { background: #4a9a4a; }
+.course-list { list-style-type: none; padding-left: 0; }
+.course-item { background: #2A3F4A; margin-bottom: 15px; border-radius: 8px; overflow: hidden; }
+.course-info { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+.course-info a { text-decoration: none; color: #F0F0F0; font-weight: bold; font-size: 1.2em; }
+.course-info a:hover { color: #5cb85c; }
+.course-actions { display: flex; gap: 10px; margin-left: auto; }
+.course-actions .certificate-btn { font-size: 1em; font-weight: normal; padding: 5px 10px; border-radius: 5px; line-height: 1; display: inline-flex; align-items: center; }
+.archive-form button {
+    background: transparent;
+    border: 1px solid #d9534f;
+    color: #d9534f;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.2s;
+}
+.archive-form button:hover {
+    background: #d9534f;
+    color: white;
+}
+.progress-bar-container { background-color: #4a5e6a; height: 10px; }
+.progress-bar { background-color: #5cb85c; height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+.progress-bar.completed { background-color: #f0ad4e; }
+.no-courses { text-align: center; color: #cccccc; padding: 50px; font-size: 1.2rem; }
+.new-course-wrapper { text-align: center; }
+.certificate-btn {
+    background: transparent;
+    border: 1px solid #f0ad4e;
+    color: #f0ad4e;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: normal;
+    transition: all 0.2s;
+}
+.certificate-btn:hover {
+    background: #f0ad4e;
+    color: #000;
+    text-decoration: none;
+}
+.course-actions .certificate-btn,
+.course-actions .archive-form button {
+    height: 32px;
+    line-height: 20px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    font-weight: normal;
+    min-width: 100px;
+    justify-content: center;
+}
+.course-actions .change-title-btn {
+    background: transparent;
+    border: 1px solid #5cb85c;
+    color: #5cb85c;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 100px;
+    transition: all 0.2s;
+}
+.course-actions .change-title-btn:hover {
+    background: #5cb85c;
+    color: #000;
+}
 </style>
+
 <div class="container">
     <div class="header">
         <h1>{% if lang == 'russian' %}Мои курсы{% else %}My Courses{% endif %}</h1>
@@ -177,6 +223,7 @@ async function improveTitle(courseId, currentTitle) {
                             {% if progress_percent >= 100 %}
                                 <a href="{{ url_for('course.show_certificate', course_id=course.id) }}" class="certificate-btn">🏆 {% if lang == 'russian' %}Сертификат{% else %}View Certificate{% endif %}</a>
                             {% endif %}
+                            <button class="change-title-btn" onclick="changeTitle('{{ course.id }}')">{% if lang == 'russian' %}Изменить название{% else %}Change Title{% endif %}</button>
                             <form class="archive-form" action="{{ url_for('course.archive_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('{% if lang == 'russian' %}Вы уверены, что хотите архивировать этот курс?{% else %}Are you sure you want to archive this course?{% endif %}');">
                                 <button type="submit">{% if lang == 'russian' %}Архивировать{% else %}Archive{% endif %}</button>
                             </form>
@@ -193,8 +240,9 @@ async function improveTitle(courseId, currentTitle) {
             <p>{% if lang == 'russian' %}У вас нет активных курсов.{% else %}You don't have any active courses.{% endif %}</p>
         </div>
     {% endif %}
+
     <div class="new-course-wrapper">
         <a href="{{ url_for('course.home') }}" class="new-course-btn">{% if lang == 'russian' %}Я хочу научиться чему-то новому!{% else %}I'd like to learn something new!{% endif %}</a>
     </div>
- </div>
- {% endblock %}
+</div>
+{% endblock %}
