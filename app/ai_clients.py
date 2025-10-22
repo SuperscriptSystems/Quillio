@@ -18,19 +18,12 @@ def list_available_models() -> List[str]:
 available_models = list_available_models()
 print("Available models:", available_models)
 
-# Use gemini-2.5-flash as the default model
-DEFAULT_MODEL = "gemini-2.5-flash"
+# Use gemini-2.5-pro as the default model
+DEFAULT_MODEL = "gemini-2.5-pro"
 print(f"Using model: {DEFAULT_MODEL}")
 
 # Model configurations
 MODEL_CONFIGS = {
-    "gemini-2.5-flash": {
-        "model": "gemini-2.5-flash",
-        "max_output_tokens": 8192,  # Higher token limit for better context
-        "temperature": 0.7,
-        "top_p": 1.0,
-        "top_k": 40
-    },
     "gemini-2.5-pro": {
         "model": "gemini-2.5-pro",
         "max_output_tokens": 8192,
